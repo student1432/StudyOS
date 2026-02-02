@@ -1,30 +1,20 @@
 import firebase_admin
-from firebase_admin import credentials, auth, firestore
+from firebase_admin import credentials, firestore, auth
 import os
+import json
 
-# Initialize Firebase Admin SDK
-def initialize_firebase():
-    """Initialize Firebase Admin SDK with service account key"""
-    try:
-        # Check if already initialized
-        firebase_admin.get_app()
-    except ValueError:
-        # Path to service account key
-        cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
-        
-        if not os.path.exists(cred_path):
-            raise FileNotFoundError(
-                "serviceAccountKey.json not found. "
-                "Please download it from Firebase Console and place it in the project root."
-            )
-        
-        # Initialize with service account
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
+# Try to load from file first, then from environment variable
+if os.path.exists('serviceAccountKey.json'):
+    cred = credentials.Certificate('serviceAccountKey.json')
+else:
+    # Load from environment variable
+    firebase_creds = os.environ.get('FIREBASE_CREDENTIALS')
+    if firebase_creds:
+        cred_dict = json.loads(firebase_creds)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        raise FileNotFoundError("Firebase credentials not found!")
 
-# Initialize Firebase
-initialize_firebase()
-
-# Export auth and db clients
-auth = auth
+firebase_admin.initialize_app(cred)
+auth = auth 
 db = firestore.client()
