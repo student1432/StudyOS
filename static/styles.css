@@ -52,7 +52,7 @@
 
     /* Progress */
     --progress-track:   #2e2e2e;
-    --progress-fill:    #dcffdc;
+    --progress-fill:    #ffffff;
 
     /* Checkbox complete */
     --complete-bg:      rgba(197, 197, 197, 0.07);
@@ -344,7 +344,7 @@ textarea { resize: vertical; min-height: 90px; }
     justify-content: center;
     position: relative;
 }
-.island-chart canvas { max-width: 140px; max-height: 140px; }
+.island-chart canvas { max-width: 200px; max-height: 200px; }
 
 .chart-center-text {
     position: absolute;
@@ -1011,4 +1011,229 @@ textarea { resize: vertical; min-height: 90px; }
     .form-row-split { grid-template-columns: 1fr; }
     .explore-grid { grid-template-columns: 1fr; }
     .subject-mini-bars { grid-template-columns: 1fr 1fr; }
+}
+.syllabus-subject {
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: var(--bg-secondary);
+}
+
+.syllabus-subject summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items:end;
+}
+
+.syllabus-subject summary::-webkit-details-marker {
+    display: none;
+}
+
+.syllabus-subject summary::after {
+    content: "▾";
+    font-size: 18px;
+    color: var(--text-muted);
+    margin-left: 8px;
+}
+
+.syllabus-subject[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.study-mode-layout {
+    display: flex;
+    gap: 24px;
+}
+
+.pomodoro-card {
+    flex: 1;
+    background: var(--bg-secondary);
+    padding: 32px;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.donut {
+    width: 350px;
+}
+
+.donut-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 3;
+}
+
+.donut-progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-dasharray: 100;
+}
+
+.donut-center {
+    font-size: 28px;
+    color: var(--text-primary);
+}
+
+.study-todo {
+    width: 280px;
+    background: var(--bg-secondary);
+    padding: 16px;
+    border-radius: 16px;
+}
+
+.study-todo-item {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.study-todo-item.done {
+    background: #1f8f4a;
+    color: white;
+}
+.pomodoro-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.pomodoro-controls button {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pomodoro-controls button:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent);
+}
+
+.pomodoro-controls button:active {
+    transform: scale(0.96);
+}
+
+.pomodoro-controls button#start {
+    background: var(--accent);
+    color: rgb(0, 0, 0);
+    border: none;
+}
+
+.pomodoro-controls button#start:hover {
+    opacity: 0.9;
+}
+
+.pomodoro-controls button#pause {
+    background: #444;
+    color: #eee;
+}
+
+.pomodoro-controls button#reset {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+#add_button{
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.study-mode-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 32px;
+    align-items: start;
+}
+
+.study-timer-card {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+}
+
+.donut {
+    margin: auto;
+}
+
+.donut-bg {
+    fill: none;
+    stroke: #2a2a2a;
+    stroke-width: 3.8;
+}
+
+.donut-progress {
+    fill: none;
+    stroke: var(--text-muted);
+    stroke-width: 3.8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.3s linear;
+}
+
+.donut-center-time {
+    margin-top: -200px;
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.study-todo-card {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.todo-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--bg-tertiary);
+}
+
+.todo-item.done {
+    background: #1f4d2f;
+    text-decoration: line-through;
+}
+
+.todo-actions button {
+    margin-left: 6px;
+    cursor: pointer;
+}
+.delete-button
+{
+background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+}
+.finish-button
+{
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
 }

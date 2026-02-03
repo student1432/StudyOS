@@ -5,6 +5,7 @@ from datetime import datetime
 from templates.academic_data import get_syllabus, get_available_subjects
 import os
 import hashlib
+from google.cloud.firestore import Increment
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -511,6 +512,63 @@ def toggle_chapter_completion():
     # Redirect back to academic dashboard (the chapter list lives there now)
     return redirect(url_for('academic_dashboard'))
 
+# ============================================================
+# STUDY MODE (Pomodoro)
+# ============================================================
+
+@app.route('/study-mode')
+@require_login
+def study_mode():
+    uid = session['uid']
+    todos = db.collection('users').document(uid)\
+        .collection('study_todos').stream()
+    todo_list = [{'id': t.id, **t.to_dict()} for t in todos]
+
+    return render_template(
+        'study_mode.html',
+        name=session.get('name'),
+        todos=todo_list
+    )
+
+@app.route('/study-mode/time', methods=['POST'])
+@require_login
+def study_time():
+    uid = session['uid']
+    seconds = int(request.json['seconds'])
+    db.collection('users').document(uid).set({
+        'study_mode': {'total_seconds': Increment(seconds)}
+    }, merge=True)
+    return jsonify(ok=True)
+
+@app.route('/study-mode/todo/add', methods=['POST'])
+@require_login
+def add_study_todo():
+    uid = session['uid']
+    text = request.json['text']
+    db.collection('users').document(uid)\
+        .collection('study_todos').add({
+            'text': text,
+            'done': False
+        })
+    return jsonify(ok=True)
+
+@app.route('/study-mode/todo/<tid>/toggle', methods=['POST'])
+@require_login
+def toggle_study_todo(tid):
+    uid = session['uid']
+    ref = db.collection('users').document(uid)\
+        .collection('study_todos').document(tid)
+    doc = ref.get()
+    ref.update({'done': not doc.to_dict().get('done', False)})
+    return jsonify(ok=True)
+
+@app.route('/study-mode/todo/<tid>/delete', methods=['POST'])
+@require_login
+def delete_study_todo(tid):
+    uid = session['uid']
+    db.collection('users').document(uid)\
+        .collection('study_todos').document(tid).delete()
+    return jsonify(ok=True)
 # ============================================================================
 # GOALS (POST handler only — rendered inside academic_dashboard)
 # ============================================================================

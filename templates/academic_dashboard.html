@@ -48,26 +48,53 @@
                 </div>
 
                 {% for subject_name, chapters in syllabus_flat.items() %}
-                <div class="syllabus-subject">
-                    <div class="syllabus-subject-header">
-                        <h4>{{ subject_name }}</h4>
-                        <span class="subject-pct">{{ progress_data.by_subject.get(subject_name, 0) }}%</span>
-                    </div>
+                <details class="syllabus-subject" open>
+                     <summary class="syllabus-subject-header">
+                         <h4>{{ subject_name }}</h4>
+                         <span class="subject-pct">
+                              {{ progress_data.by_subject.get(subject_name, 0) }}%
+                         </span>
+                        </summary>
 
-                    {% for chapter_name, ch_data in chapters.items() %}
-                    <div class="chapter-row {% if ch_data.completed %}completed{% endif %}">
-                        <form method="POST" action="{{ url_for('toggle_chapter_completion') }}" style="display:contents;">
-                            <input type="hidden" name="subject_name" value="{{ subject_name }}">
-                            <input type="hidden" name="chapter_name" value="{{ chapter_name }}">
-                            <button type="submit" class="chapter-checkbox" style="border:none;background:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;flex-shrink:0;transition:all 0.2s;{% if ch_data.completed %}background:var(--tick-color);{% else %}background:var(--bg-tertiary);border:2px solid var(--border);{% endif %}">
-                                {% if ch_data.completed %}<span style="color:var(--bg-primary);font-size:11px;font-weight:700;">✔</span>{% endif %}
-                            </button>
-                        </form>
-                        <span class="chapter-row-text">{{ chapter_name }}</span>
-                        <a href="{{ url_for('chapter_detail', subject_name=subject_name, chapter_name=chapter_name) }}" class="chapter-row-link">View →</a>
-                    </div>
-                    {% endfor %}
-                </div>
+                        <div class="syllabus-chapters">
+                             {% for chapter_name, ch_data in chapters.items() %}
+                            <div class="chapter-row {% if ch_data.completed %}completed{% endif %}">
+                                <form method="POST"
+                                      action="{{ url_for('toggle_chapter_completion') }}"
+                                      style="display:contents;">
+                                    <input type="hidden" name="subject_name" value="{{ subject_name }}">
+                                    <input type="hidden" name="chapter_name" value="{{ chapter_name }}">
+                                    <button type="submit"
+                                            class="chapter-checkbox"
+                                            style="border:none;background:none;padding:0;cursor:pointer;
+                                                    display:flex;align-items:center;justify-content:center;
+                                                    width:18px;height:18px;border-radius:4px;
+                                                    flex-shrink:0;transition:all 0.2s;
+                                                    {% if ch_data.completed %}
+                                                        background:var(--tick-color);
+                                                    {% else %}
+                                                        background:var(--bg-tertiary);
+                                                        border:2px solid var(--border);
+                                                    {% endif %}">
+                                            {% if ch_data.completed %}
+                                                <span style="color:var(--bg-primary);
+                                                            font-size:11px;font-weight:700;">✔</span>
+                                            {% endif %}
+                                        </button>
+                                    </form>
+
+                                    <span class="chapter-row-text">{{ chapter_name }}</span>
+                                    <a href="{{ url_for('chapter_detail',
+                                                        subject_name=subject_name,
+                                                        chapter_name=chapter_name) }}"
+                                        class="chapter-row-link">
+                                        View →
+                                    </a>
+                                 </div>
+                                {% endfor %}
+                            </div>
+                    </details>
+
                 {% endfor %}
 
                 {% if not syllabus_flat %}
@@ -159,6 +186,12 @@
                 <div class="study-island">
                     <div class="study-island-header">
                         <h3>Study Mode</h3>
+                        
+                        <!--Add Study Mode after refining-->
+                        <!--<a href="{{ url_for('study_mode') }}" class="btn btn-primary">
+                            Enter Study Mode →
+                        </a>-->
+
                     </div>
                     <div class="pomodoro-container">
                         <div class="pomodoro-display" id="pomodoroDisplay">25:00</div>
