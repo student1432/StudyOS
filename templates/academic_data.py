@@ -453,7 +453,257 @@ ACADEMIC_SYLLABI = {
                     ,
                     }
                 },
-
+                'History': {
+                    'chapters': {
+                        'The French Revolution': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Socialism in Europe and the Russian Revolution': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Nazism and the Rise of Hitler': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Pastoralists in the Modern World - Only Periodic Assessment': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        }
+                    ,
+                    }
+                },
+                'Geography': {
+                    'chapters': {
+                        'India - Size and Location': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Physical Features of India': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Drainage': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Climate': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Population': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                'Political Science': {
+                    'chapters': {
+                        'What is Democracy? Why Democracy?': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Constitutional Design': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Electoral Politics': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Working of Institution': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Democratic Rights': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                'Economics': {
+                    'chapters': {
+                        'The Story of Village Palampur - Only Periodic Assessment': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'People as Resource': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Poverty as a Challenge': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        },
+                        'Food Security in India': {
+                            'topics': [
+                                {
+                                    'name': 'Distance and Displacement',
+                                    'overview': 'Understanding scalar and vector quantities',
+                                    'resources': {
+                                        'videos': [],
+                                        'pdfs': [],
+                                        'practice': []
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
             },
             '10': {
                 'Mathematics': {

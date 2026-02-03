@@ -6,6 +6,13 @@ from templates.academic_data import get_syllabus, get_available_subjects
 import os
 import hashlib
 from google.cloud.firestore import Increment
+import uuid
+from functools import wraps
+from flask import render_template, request, redirect, url_for, abort, jsonify
+from firebase_admin import firestore
+from datetime import datetime
+
+
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -513,7 +520,7 @@ def toggle_chapter_completion():
     return redirect(url_for('academic_dashboard'))
 
 # ============================================================
-# STUDY MODE (Pomodoro)
+# STUDY MODE (Pomodoro) ChatGPT
 # ============================================================
 
 @app.route('/study-mode')
@@ -569,6 +576,11 @@ def delete_study_todo(tid):
     db.collection('users').document(uid)\
         .collection('study_todos').document(tid).delete()
     return jsonify(ok=True)
+
+#=============================================================================
+# DOC - V1 - ChatGPT - Temporary Not Perfect
+#=============================================================================
+
 # ============================================================================
 # GOALS (POST handler only — rendered inside academic_dashboard)
 # ============================================================================

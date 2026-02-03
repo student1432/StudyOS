@@ -1,0 +1,61 @@
+<!--<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ page.title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<div class="dashboard-layout">
+    {% include "_sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1 contenteditable="true" id="title">{{ page.title }}</h1>
+
+        <div
+            id="editor"
+            contenteditable="true"
+            spellcheck="true"
+        >{{ page.content }}</div>
+
+    </main>
+</div>
+
+<script>
+const editor = document.getElementById("editor");
+let timeout = null;
+
+// Preserve paragraphs + indentation
+editor.style.whiteSpace = "pre-wrap";
+
+// Slash commands
+editor.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        document.execCommand("insertHTML", false, "\n");
+    }
+});
+
+// Formatting shortcuts
+document.addEventListener("keydown", e => {
+    if (e.ctrlKey && e.key === "b") document.execCommand("bold");
+    if (e.ctrlKey && e.key === "i") document.execCommand("italic");
+    if (e.ctrlKey && e.key === "u") document.execCommand("underline");
+});
+
+// Autosave
+editor.addEventListener("input", () => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+        fetch("{{ url_for('save_note', page_id=page.id) }}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ content: editor.innerText })
+        });
+    }, 500);
+});
+</script>
+
+</body>
+</html>
+-->
