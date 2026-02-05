@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Statistics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+{% block content %}
+
+<div class="dashboard-layout-statistics">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('profile_resume') }}">{{ name }}</a>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('profile_dashboard') }}" class="nav-item active">Home</a>
+            <a href="{{ url_for('academic_dashboard') }}" class="nav-item">Academic</a>
+            <a href="{{ url_for('interests_dashboard') }}" class="nav-item">Interests</a>
+            <a href="{{ url_for('statistics_dashboard') }}" class="nav-item">Statistics</a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('about') }}" class="nav-item">Settings</a>
+            <a href="{{ url_for('about') }}" class="nav-item">Contact</a>
+            <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
+        </div>
+    </aside>
+
+
+    <main class="main-content">
+        <h2>Statistics</h2>
+<br>
+<br>
+        <div class="study-island">
+            <h3>Daily Streak</h3>
+            <div class="streak-box">{{ streak }} Days</div>
+        </div>
+<br>
+<br>
+<br>
+        <div class="study-island">
+            <h3>Exam Performance (Average)</h3>
+            <canvas id="barChart"></canvas>
+        </div>
+<br>
+<br>
+<br>
+        <div class="study-island">
+            <h3>Exam Progress Over Time</h3>
+            <canvas id="lineChart"></canvas>
+        </div>
+        <br>
+<br>
+<br>
+<br>
+    </main>
+</div>
+</body>
+</html>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const barData = {
+    labels: {{ exam_avg.keys() | list | tojson }},
+    datasets: [{
+        label: "Average %",
+        data: {{ exam_avg.values() | list | tojson }},
+        borderWidth: 1
+    }]
+};
+
+new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: barData,
+    options: { responsive: true }
+});
+
+const lineData = {
+    labels: {{ timeline | map(attribute='date') | list | tojson }},
+    datasets: [{
+        label: "Progress %",
+        data: {{ timeline | map(attribute='percentage') | list | tojson }},
+        fill: false,
+        tension: 0.3
+    }]
+};
+
+new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: lineData,
+    options: { responsive: true }
+});
+</script>
+
+{% endblock %}

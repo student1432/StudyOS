@@ -18,6 +18,7 @@
             <a href="{{ url_for('profile_dashboard') }}" class="nav-item">Home</a>
             <a href="{{ url_for('academic_dashboard') }}" class="nav-item active">Academic</a>
             <a href="{{ url_for('interests_dashboard') }}" class="nav-item">Interests</a>
+            <a href="{{ url_for('statistics_dashboard') }}" class="nav-item">Statistics</a>
         </nav>
         <div class="sidebar-footer">
             <a href="{{ url_for('about') }}" class="nav-item">Settings</a>
@@ -58,10 +59,15 @@
 
                         <div class="syllabus-chapters">
                              {% for chapter_name, ch_data in chapters.items() %}
-                            <div class="chapter-row {% if ch_data.completed %}completed{% endif %}">
+                            <div class="chapter-row
+                                {% if ch_data.completed %}completed{% endif %}
+                                {% if ch_data.excluded %}excluded{% endif %}
+                            ">
+                                {% if not ch_data.excluded %}
                                 <form method="POST"
                                       action="{{ url_for('toggle_chapter_completion') }}"
                                       style="display:contents;">
+                                {% endif %}
                                     <input type="hidden" name="subject_name" value="{{ subject_name }}">
                                     <input type="hidden" name="chapter_name" value="{{ chapter_name }}">
                                     <button type="submit"
@@ -81,9 +87,20 @@
                                                             font-size:11px;font-weight:700;">✔</span>
                                             {% endif %}
                                         </button>
+                                    {% if not ch_data.excluded %}
                                     </form>
-
+                                    {% endif %}
                                     <span class="chapter-row-text">{{ chapter_name }}</span>
+                                        <form method="POST"
+                                              action="{{ url_for('toggle_chapter_exclusion') }}"
+                                              style="margin-left:auto;">
+                                            <input type="hidden" name="subject_name" value="{{ subject_name }}">
+                                            <input type="hidden" name="chapter_name" value="{{ chapter_name }}">
+                                            <button class="exclude-btn" title="Remove / Restore chapter">
+                                                {% if ch_data.excluded %}↺{% else %}✕{% endif %}
+                                            </button>
+                                        </form>
+
                                     <a href="{{ url_for('chapter_detail',
                                                         subject_name=subject_name,
                                                         chapter_name=chapter_name) }}"
@@ -225,7 +242,7 @@
                         <tbody>
                             {% for r in results %}
                             <tr>
-                                <td>{{ r.exam_name }}</td>
+                                <td>{{ r.test_types }}</td>
                                 <td>{{ r.subject }}</td>
                                 <td>
                                     {% set pct = (r.score / r.max_score * 100)|round(1) if r.max_score else 0 %}
@@ -247,7 +264,15 @@
                     <form method="POST" action="{{ url_for('results_dashboard') }}">
                         <input type="hidden" name="action" value="add">
                         <div class="study-add-row">
-                            <input type="text" name="exam_name" placeholder="Exam name" required style="flex:1.2;">
+
+                            <select name="test_types" required>
+                                    <option value="" disabled selected>Select test</option>
+                                {% for t in test_types %}
+                                    <option value="{{ t }}">{{ t }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <input type="date" name="exam_date" required>
                             <input type="text" name="subject" placeholder="Subject" style="flex:1;">
                             <input type="number" name="score" placeholder="Score" required style="flex:0.6;" step="0.1">
                             <input type="number" name="max_score" placeholder="/ Max" style="flex:0.6;" step="0.1">

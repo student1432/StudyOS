@@ -11,15 +11,32 @@ from functools import wraps
 from flask import render_template, request, redirect, url_for, abort, jsonify
 from firebase_admin import firestore
 from datetime import datetime
+from datetime import date, datetime, timedelta
 
 
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+user_ref = None
 
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
+
+# ============================================================================
+# STATISTICS
+# ============================================================================
+
+TEST_TYPES = [
+    "Unit Test 1", "Unit Test 2", "Unit Test 3", "Unit Test 4",
+    "Unit Test 5", "Unit Test 6",
+    "Quarterly", "Half Yearly",
+    "Pre Midterms", "Midterms", "Post Midterms",
+    "1st Midterm", "2nd Midterm",
+    "Pre Finals", "Finals",
+    "Pre Annual", "Annual"
+]
+
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -44,6 +61,8 @@ def get_user_data(uid):
 def calculate_academic_progress(user_data):
     purpose = user_data.get('purpose')
     chapters_completed = user_data.get('chapters_completed', {})
+    academic_exclusions = user_data.get('academic_exclusions', {})
+    chapter_name = user_data.get('chapter_name')
     syllabus = {}
     if purpose == 'highschool' and user_data.get('highschool'):
         hs = user_data['highschool']
@@ -61,6 +80,9 @@ def calculate_academic_progress(user_data):
     for subject_name, subject_data in syllabus.items():
         chapters = subject_data.get('chapters', {})
         chapter_count = len(chapters)
+        exclusion_key = f"{subject_name}::{chapter_name}"
+        if academic_exclusions.get(exclusion_key):
+            continue
         if chapter_count == 0:
             by_subject[subject_name] = 0
             continue
@@ -74,6 +96,25 @@ def calculate_academic_progress(user_data):
         total_completed += completed
     overall = round((total_completed / total_chapters) * 100, 1) if total_chapters > 0 else 0
     return {'overall': overall, 'by_subject': by_subject, 'total_chapters': total_chapters, 'total_completed': total_completed}
+
+def calculate_average_percentage(results):
+    valid_percentages = []
+
+    for r in results:
+        try:
+            score = float(r.get('score', 0))
+            max_score = float(r.get('max_score', 0))
+
+            if max_score > 0:
+                pct = (score / max_score) * 100
+                valid_percentages.append(pct)
+        except (TypeError, ValueError):
+            continue
+
+    if not valid_percentages:
+        return 0
+
+    return round(sum(valid_percentages) / len(valid_percentages), 1)
 
 def initialize_profile_fields(uid):
     user_doc = db.collection('users').document(uid).get()
@@ -95,6 +136,11 @@ def initialize_profile_fields(uid):
             updates[key] = default
     if updates:
         db.collection('users').document(uid).update(updates)
+
+    uid = session['uid']
+    user_data = get_user_data(uid)
+    name_top_statistics = user_data.get('name')
+
 
 # ============================================================================
 # STATIC DATA: CAREERS, COURSES, INTERNSHIPS
@@ -277,9 +323,35 @@ def login():
                 flash('Invalid email or password', 'error')
                 return redirect(url_for('login'))
             session['uid'] = uid
+            
+            user_ref = db.collection('users').document(uid)
+            
+            snapshot = user_ref.get()
+            user_data = snapshot.to_dict() if snapshot.exists else {}
+
+            today = date.today().isoformat()
+            last_login = user_data.get('last_login_date')
+            streak = user_data.get('login_streak', 0)
+
+            if last_login:
+                last_date = datetime.fromisoformat(last_login).date()
+                if last_date == date.today():
+                    pass
+                elif last_date == date.today() - timedelta(days=1):
+                    streak +=1
+                else:
+                    streak=1
+            else:
+                streak = 1
+
+            user_ref.update({
+                'last_login_date': today,
+                'login_streak': streak
+            })
+
             initialize_profile_fields(uid)
             flash('Login successful!', 'success')
-            return redirect(url_for('profile_dashboard'))
+            return redirect(url_for('profile_dashboard'))         
         except admin_auth.UserNotFoundError:
             flash('Invalid email or password', 'error')
             return redirect(url_for('login'))
@@ -287,6 +359,7 @@ def login():
             flash(f'Login error: {str(e)}', 'error')
             return redirect(url_for('login'))
     return render_template('login.html')
+
 
 @app.route('/logout')
 def logout():
@@ -425,14 +498,26 @@ def academic_dashboard():
         syllabus = get_syllabus('after_tenth', 'CBSE', at.get('grade'), at.get('subjects', []))
     progress_data = calculate_academic_progress(user_data)
     chapters_completed = user_data.get('chapters_completed', {})
+    academic_exclusions = user_data.get('academic_exclusions', {})
     # Build flat chapter list with completion status for left panel
     syllabus_flat = {}
     for subject_name, subject_data in syllabus.items():
         chapters = subject_data.get('chapters', {})
         syllabus_flat[subject_name] = {}
+
         for chapter_name in chapters.keys():
-            is_done = chapters_completed.get(subject_name, {}).get(chapter_name, False)
-            syllabus_flat[subject_name][chapter_name] = {'completed': is_done}
+            exclusion_key = f"{subject_name}::{chapter_name}"
+            is_excluded = academic_exclusions.get(exclusion_key, False)
+
+            is_done = False
+            if not is_excluded:
+                is_done = chapters_completed.get(subject_name, {}).get(chapter_name, False)
+
+            syllabus_flat[subject_name][chapter_name] = {
+                'completed': is_done,
+                'excluded': is_excluded
+            }
+
     # Goals and tasks for right panel
     goals = user_data.get('goals', [])
     tasks = user_data.get('tasks', [])
@@ -440,9 +525,7 @@ def academic_dashboard():
     # Stats for results
     total_exams = len(results)
     avg_percentage = 0
-    if results:
-        pcts = [(r['score'] / r['max_score']) * 100 for r in results if r.get('max_score', 0) > 0]
-        avg_percentage = round(sum(pcts) / len(pcts), 1) if pcts else 0
+    avg_percentage = calculate_average_percentage(results)
     # Subjects for goal dropdown
     subjects = list(syllabus.keys())
     context = {
@@ -457,8 +540,10 @@ def academic_dashboard():
         'total_exams': total_exams,
         'avg_percentage': avg_percentage,
         'subjects': subjects,
+        'test_types': TEST_TYPES
     }
     return render_template('academic_dashboard.html', **context)
+
 
 @app.route('/academic/subject/<subject_name>/chapter/<chapter_name>')
 @require_login
@@ -517,6 +602,38 @@ def toggle_chapter_completion():
     chapters_completed[subject_name][chapter_name] = not current_status
     db.collection('users').document(uid).update({'chapters_completed': chapters_completed})
     # Redirect back to academic dashboard (the chapter list lives there now)
+    return redirect(url_for('academic_dashboard'))
+
+@app.route('/academic/toggle_chapter_exclusion', methods=['POST'])
+@require_login
+def toggle_chapter_exclusion():
+    uid = session['uid']
+    subject_name = None
+    chapter_name = None
+
+    if not subject_name or not chapter_name:
+        subject_name = request.form.get('subject_name')
+        chapter_name = request.form.get('chapter_name')
+
+    if not subject_name or not chapter_name:
+        return redirect(url_for('academic_dashboard'))
+
+    key = f"{subject_name}::{chapter_name}"
+    user_ref = db.collection('users').document(uid)
+
+    user_doc = user_ref.get()
+    user_data = user_doc.to_dict() if user_doc.exists else {}
+
+    exclusions = user_data.get('academic_exclusions', {})
+
+    # Toggle exclusion (REVERSIBLE)
+    if exclusions.get(key):
+        exclusions.pop(key)
+    else:
+        exclusions[key] = True
+
+    user_ref.update({'academic_exclusions': exclusions})
+
     return redirect(url_for('academic_dashboard'))
 
 # ============================================================
@@ -672,37 +789,100 @@ def tasks_dashboard():
 # RESULTS
 # ============================================================================
 
-@app.route('/results', methods=['GET', 'POST'])
+@app.route('/results', methods=['POST'])
 @require_login
 def results_dashboard():
     uid = session['uid']
-    if request.method == 'POST':
-        action = request.form.get('action')
-        if action == 'add':
-            exam_name = request.form.get('exam_name')
-            score = request.form.get('score')
-            if exam_name and score:
-                user_data = get_user_data(uid)
-                results = user_data.get('exam_results', [])
-                max_score = request.form.get('max_score')
-                results.append({
-                    'id': len(results), 'exam_name': exam_name,
-                    'subject': request.form.get('subject', ''),
-                    'score': float(score),
-                    'max_score': float(max_score) if max_score else 100,
-                    'date': request.form.get('date', ''),
-                    'created_at': datetime.utcnow().isoformat()
-                })
-                db.collection('users').document(uid).update({'exam_results': results})
-                flash('Result added!', 'success')
-        elif action == 'delete':
-            result_id = int(request.form.get('result_id'))
-            user_data = get_user_data(uid)
-            results = [r for r in user_data.get('exam_results', []) if r.get('id') != result_id]
-            db.collection('users').document(uid).update({'exam_results': results})
+    action = request.form.get('action')
+
+    user_data = get_user_data(uid)
+    results = user_data.get('exam_results', [])
+
+    if action == 'add':
+        test_types = request.form.get('test_types')          # dropdown value
+        subject = request.form.get('subject', '')
+        score = request.form.get('score')
+        max_score = request.form.get('max_score')
+        exam_date = request.form.get('exam_date')
+
+        if test_types and score:
+            results.append({
+                'id': int(datetime.utcnow().timestamp() * 1000),  # robust unique id
+                'test_types': test_types,
+                'subject': subject,
+                'score': float(score),
+                'max_score': float(max_score) if max_score else 100.0,
+                'exam_date': exam_date,
+                'created_at': datetime.utcnow().isoformat()
+            })
+
+            db.collection('users').document(uid).update({
+                'exam_results': results
+            })
+
+            flash('Result added!', 'success')
+
+    elif action == 'delete':
+        result_id = request.form.get('result_id')
+        if result_id:
+            results = [
+                r for r in results
+                if str(r.get('id')) != str(result_id)
+            ]
+
+            db.collection('users').document(uid).update({
+                'exam_results': results
+            })
+
             flash('Result deleted!', 'success')
-        return redirect(url_for('academic_dashboard'))
+
     return redirect(url_for('academic_dashboard'))
+
+# ============================================================================
+# STATISTICS
+# ============================================================================
+
+@app.route('/statistics')
+@require_login
+def statistics_dashboard():
+    uid = session['uid']
+    user = get_user_data(uid)
+
+    results = user.get('exam_results', [])
+
+    exam_map = {}
+    timeline = []
+
+    for r in results:
+        if not r.get('max_score'):
+            continue
+
+        pct = (r['score'] / r['max_score']) * 100
+        et = r.get('test_type')
+
+        exam_map.setdefault(et, []).append(pct)
+
+        if r.get('exam_date'):
+            timeline.append({
+                'date': r['exam_date'],
+                'percentage': round(pct, 2)
+            })
+
+    exam_avg = {
+        k: round(sum(v) / len(v), 2)
+        for k, v in exam_map.items()
+        
+    }
+
+    timeline = sorted(timeline, key=lambda x: x['date'])
+
+    return render_template(
+        'statistics.html',
+        exam_avg=exam_avg,
+        timeline=timeline,
+        streak=user.get('login_streak', 0)
+    )
+
 
 # ============================================================================
 # PROJECTS
@@ -881,6 +1061,45 @@ def about():
     uid = session['uid']
     user_data = get_user_data(uid)
     return render_template('about.html', user=user_data, name=user_data.get('name') if user_data else 'Student')
+
+# ============================================================================
+# ADMIN DASHBOARD ROUTES (TENANT APP)
+# ============================================================================
+
+#from admin_routes import (
+    #admin_login, admin_logout, admin_dashboard,
+    #admin_students, admin_student_add, admin_student_toggle,
+    #admin_syllabus, admin_syllabus_update,
+    #admin_goals, admin_goal_create, admin_goal_delete,
+    #admin_progress, admin_resources, admin_resource_add,
+    #admin_statistics, require_admin
+#)
+
+
+# Admin authentication
+# app.route('/admin/login', methods=['GET', 'POST'])(admin_login)
+# app.route('/admin/logout')(admin_logout)
+
+# Admin dashboard
+# app.route('/admin/dashboard')(require_admin(admin_dashboard))
+#app.route('/admin/students')(require_admin(admin_students))
+#app.route('/admin/students/add', methods=['GET', 'POST'])(require_admin(admin_student_add))
+#app.route('/admin/students/<student_uid>/toggle', methods=['POST'])(require_admin(admin_student_toggle))
+
+# Syllabus management
+#app.route('/admin/syllabus')(require_admin(admin_syllabus))
+#app.route('/admin/syllabus/update', methods=['POST'])(require_admin(admin_syllabus_update))
+
+# Goals management
+#app.route('/admin/goals')(require_admin(admin_goals))
+#app.route('/admin/goals/create', methods=['GET', 'POST'])(require_admin(admin_goal_create))
+#app.route('/admin/goals/<goal_id>/delete', methods=['POST'])(require_admin(admin_goal_delete))
+
+# Progress and resources
+#app.routed('/admin/progress')(require_admin(admin_progress))
+#app.route('/admin/resources')(require_admin(admin_resources))
+#app.route('/admin/resources/add', methods=['GET', 'POST'])(require_admin(admin_resource_add))
+#app.route('/admin/statistics')(require_admin(admin_statistics))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

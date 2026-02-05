@@ -104,9 +104,15 @@ a:hover { color: var(--accent-hover); opacity: 1; }
    LAYOUT — SIDEBAR + MAIN
    ============================================================================ */
 
+.dashboard-layout-statistics {
+    display: flex;
+    max-height: 150vh;
+    max-width: 150vh;
+    
+}
 .dashboard-layout {
     display: flex;
-    min-height: 100vh;
+    max-height: 100vh;
 }
 
 /* --- SIDEBAR --- */
@@ -646,11 +652,11 @@ textarea { resize: vertical; min-height: 90px; }
 }
 .study-add-row input {
     flex: 1;
-    padding: 5px 8px;
+    padding: 2px 6px;
     border: 1px solid var(--border);
     background: var(--bg-tertiary);
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: 9px;
     border-radius: 4px;
     font-family: inherit;
     height: 28px;
@@ -1342,4 +1348,22 @@ background: var(--bg-tertiary);
     border-radius: 8px;
     text-decoration: none;
     color: var(--text-primary);
+}
+.chapter-row.excluded {
+    opacity: 0.45;
+    text-decoration: line-through;
+    pointer-events: auto;
+}
+
+.exclude-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.exclude-btn:hover {
+    color: var(--danger);
 }
