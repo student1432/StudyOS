@@ -9,8 +9,11 @@
     box-sizing: border-box;
 }
 
+/* =========================================================
+   LIGHT MODE — DEFAULT
+   ========================================================= */
+
 :root {
-    /* Dark palette */
     --bg-primary:       #0f0f0f;
     --bg-secondary:     #1a1a1a;
     --bg-tertiary:      #242424;
@@ -26,14 +29,12 @@
     --accent:           #e8e8e8;
     --accent-hover:     #ffffff;
 
-    /* Sidebar */
     --sidebar-bg:       #111111;
     --sidebar-text:     #a0a0a0;
     --sidebar-active:   #e8e8e8;
     --sidebar-active-bg:rgba(255,255,255,0.06);
     --sidebar-hover-bg: rgba(255,255,255,0.04);
 
-    /* Status / semantic — subtle, transparent */
     --green-bg:         rgba(74,222,128,0.08);
     --green-text:       #86efac;
     --green-border:     rgba(74,222,128,0.25);
@@ -46,23 +47,83 @@
     --red-text:         #fca5a5;
     --red-border:       rgba(248,113,113,0.2);
 
-    /* Chart colours (dark-friendly) */
     --chart-fill:       #e8e8e8;
     --chart-empty:      #2e2e2e;
 
-    /* Progress */
     --progress-track:   #2e2e2e;
     --progress-fill:    #ffffff;
 
-    /* Checkbox complete */
-    --complete-bg:      rgba(197, 197, 197, 0.07);
-    --complete-border:  rgba(168, 168, 168, 0.3);
+    --complete-bg:      rgba(197,197,197,0.07);
+    --complete-border:  rgba(168,168,168,0.3);
     --tick-color:       #4ade80;
 
-    /* Shadows */
     --shadow:           rgba(0,0,0,0.3);
     --shadow-lg:        rgba(0,0,0,0.5);
+    
+    
+    
+   
 }
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+[data-theme="dark"] {
+     /* Light palette */
+    --bg-primary:       #f7f9fc;
+    --bg-secondary:     #ffffff;
+    --bg-tertiary:      #f1f3f6;
+    --bg-hover:         #e5e7eb;
+
+    --text-primary:     #111827;
+    --text-secondary:   #374151;
+    --text-muted:       #6b7280;
+
+    --border:           #e5e7eb;
+    --border-focus:     #9ca3af;
+
+    --accent:           #111827;
+    --accent-hover:     #000000;
+
+    /* Sidebar */
+    --sidebar-bg:       #ffffff;
+    --sidebar-text:     #374151;
+    --sidebar-active:   #111827;
+    --sidebar-active-bg:rgba(17,24,39,0.06);
+    --sidebar-hover-bg: rgba(17,24,39,0.04);
+
+    /* Status / semantic */
+    --green-bg:         rgba(34,197,94,0.12);
+    --green-text:       #166534;
+    --green-border:     rgba(34,197,94,0.3);
+
+    --yellow-bg:        rgba(234,179,8,0.15);
+    --yellow-text:      #854d0e;
+    --yellow-border:    rgba(234,179,8,0.3);
+
+    --red-bg:           rgba(239,68,68,0.12);
+    --red-text:         #7f1d1d;
+    --red-border:       rgba(239,68,68,0.3);
+
+    /* Charts */
+    --chart-fill:       #111827;
+    --chart-empty:      #e5e7eb;
+
+    /* Progress */
+    --progress-track:   #e5e7eb;
+    --progress-fill:    #111827;
+
+    /* Checkbox complete */
+    --complete-bg:      rgba(17,24,39,0.05);
+    --complete-border:  rgba(17,24,39,0.25);
+    --tick-color:       #22c55e;
+
+    /* Shadows */
+    --shadow:           rgba(0,0,0,0.08);
+    --shadow-lg:        rgba(0,0,0,0.15);
+}
+
+
 
 /* ============================================================================
    BASE
@@ -155,11 +216,29 @@ a:hover { color: var(--accent-hover); opacity: 1; }
     border-left: 3px solid transparent;
     transition: all 0.2s;
 }
+.nav-item-theme-button {
+    padding: 11px 20px;
+    color: var(--sidebar-text);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: 0px;
+}
+
 .nav-item:hover {
     background: var(--sidebar-hover-bg);
     color: var(--sidebar-active);
 }
 .nav-item.active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active);
+    border-left-color: var(--sidebar-active);
+}
+.nav-item-theme-button.hover {
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-active);
+}
+.nav-item-theme-button.active {
     background: var(--sidebar-active-bg);
     color: var(--sidebar-active);
     border-left-color: var(--sidebar-active);
@@ -413,8 +492,8 @@ textarea { resize: vertical; min-height: 90px; }
     align-items: center;
     margin-bottom: 14px;
 }
-.progress-strip-header h4 { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
-.progress-strip-header span { font-size: 14px; color: var(--text-primary); font-weight: 600; }
+.progress-strip-header h4 { font-size: 20px; color: var(--text-secondary); font-weight: 500; }
+.progress-strip-header span { font-size: 18px; color: var(--text-primary); font-weight: 600; }
 
 .progress-bar-track {
     width: 100%;
@@ -441,12 +520,12 @@ textarea { resize: vertical; min-height: 90px; }
 .subject-mini-bar-label {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
     margin-bottom: 4px;
 }
 .subject-mini-bar-track {
-    height: 5px;
+    height: 8px;
     background: var(--progress-track);
     border-radius: 3px;
     overflow: hidden;

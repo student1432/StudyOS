@@ -17,8 +17,12 @@
             <a href="{{ url_for('profile_dashboard') }}" class="nav-item">Home</a>
             <a href="{{ url_for('academic_dashboard') }}" class="nav-item">Academic</a>
             <a href="{{ url_for('interests_dashboard') }}" class="nav-item active">Interests</a>
+            <a href="{{ url_for('statistics_dashboard') }}" class="nav-item">Statistics</a>
         </nav>
         <div class="sidebar-footer">
+            <a id="themeToggle" class="nav-item">
+    Toggle theme
+            </a>
             <a href="{{ url_for('about') }}" class="nav-item">Settings</a>
             <a href="{{ url_for('about') }}" class="nav-item">Contact</a>
             <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
@@ -73,5 +77,28 @@
         </div>
     </main>
 </div>
+<script>
+(function () {
+    const root = document.documentElement;
+    const toggle = document.getElementById("themeToggle");
+
+    const savedTheme = localStorage.getItem("studyos-theme");
+    if (savedTheme) {
+        root.setAttribute("data-theme", savedTheme);
+    }
+
+    if (toggle) {
+        toggle.addEventListener("click", () => {
+            const next =
+                root.getAttribute("data-theme") === "dark"
+                ? "light"
+                : "dark";
+
+            root.setAttribute("data-theme", next);
+            localStorage.setItem("studyos-theme", next);
+        });
+    }
+})();
+</script>
 </body>
 </html>
