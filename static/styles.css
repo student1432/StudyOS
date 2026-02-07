@@ -1746,20 +1746,17 @@ textarea {
 -------------------------DOCV1 - ChatGPT-------------------------
 =================================================================*/
 
-.notes-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
 }
 
-.notes-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.notes-item {
     padding: 12px;
     background: var(--bg-tertiary);
     border-radius: 6px;
@@ -1790,7 +1787,6 @@ textarea {
     line-height: 1.6;
 }
 
-.notes-item.nested {
     margin-left: 20px;
     font-size: 14px;
     opacity: 0.9;
