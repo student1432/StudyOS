@@ -167,9 +167,7 @@ a:hover { color: var(--accent-hover); opacity: 1; }
 
 .dashboard-layout-statistics {
     display: flex;
-    max-height: 150vh;
-    max-width: 150vh;
-    
+    min-height: 100vh;
 }
 .dashboard-layout {
     display: flex;

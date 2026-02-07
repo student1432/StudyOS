@@ -62,7 +62,8 @@ def calculate_academic_progress(user_data):
     purpose = user_data.get('purpose')
     chapters_completed = user_data.get('chapters_completed', {})
     academic_exclusions = user_data.get('academic_exclusions', {})
-    chapter_name = user_data.get('chapter_name')
+    # chapter_name = user_data.get('chapter_name')  <-- Removed incorrect variable
+    
     syllabus = {}
     if purpose == 'highschool' and user_data.get('highschool'):
         hs = user_data['highschool']
@@ -72,28 +73,44 @@ def calculate_academic_progress(user_data):
     elif purpose == 'after_tenth' and user_data.get('after_tenth'):
         at = user_data['after_tenth']
         syllabus = get_syllabus('after_tenth', 'CBSE', at.get('grade'), at.get('subjects', []))
+    
     if not syllabus:
         return {'overall': 0, 'by_subject': {}, 'total_chapters': 0, 'total_completed': 0}
+        
     by_subject = {}
     total_chapters = 0
     total_completed = 0
+    
     for subject_name, subject_data in syllabus.items():
         chapters = subject_data.get('chapters', {})
-        chapter_count = len(chapters)
-        exclusion_key = f"{subject_name}::{chapter_name}"
-        if academic_exclusions.get(exclusion_key):
-            continue
-        if chapter_count == 0:
-            by_subject[subject_name] = 0
-            continue
-        completed = 0
         subject_completed_data = chapters_completed.get(subject_name, {})
+        
+        # Calculate counts specifically for this subject, respecting exclusions
+        subject_valid_count = 0
+        subject_completed_count = 0
+        
         for chapter_name in chapters.keys():
+            exclusion_key = f"{subject_name}::{chapter_name}"
+            
+            # If chapter is excluded, skip it entirely (don't count in total or completed)
+            if academic_exclusions.get(exclusion_key):
+                continue
+            
+            subject_valid_count += 1
+            
+            # Check if this valid chapter is completed
             if subject_completed_data.get(chapter_name, False):
-                completed += 1
-        by_subject[subject_name] = round((completed / chapter_count) * 100, 1)
-        total_chapters += chapter_count
-        total_completed += completed
+                subject_completed_count += 1
+        
+        # Calculate subject percentage based on VALID chapters only
+        if subject_valid_count > 0:
+            by_subject[subject_name] = round((subject_completed_count / subject_valid_count) * 100, 1)
+        else:
+            by_subject[subject_name] = 0
+            
+        total_chapters += subject_valid_count
+        total_completed += subject_completed_count
+        
     overall = round((total_completed / total_chapters) * 100, 1) if total_chapters > 0 else 0
     return {'overall': overall, 'by_subject': by_subject, 'total_chapters': total_chapters, 'total_completed': total_completed}
 
@@ -847,40 +864,77 @@ def results_dashboard():
 def statistics_dashboard():
     uid = session['uid']
     user = get_user_data(uid)
+    
+    # --- PRODUCTIVITY STATS ---
+    goals = user.get('goals', [])
+    tasks = user.get('tasks', [])
+    
+    total_goals = len(goals)
+    completed_goals = sum(1 for g in goals if g.get('completed'))
+    goals_pct = round((completed_goals / total_goals) * 100) if total_goals > 0 else 0
+    
+    total_tasks = len(tasks)
+    completed_tasks = sum(1 for t in tasks if t.get('completed'))
+    tasks_pct = round((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 0
 
+    # --- EXAM ANALYTICS ---
     results = user.get('exam_results', [])
-
+    
+    # 1. Overall Average per Test Type (Timeline Bar Chart)
     exam_map = {}
     timeline = []
+    
+    # 2. Subject-wise Performance (Line Chart)
+    # Structure: {'Math': [{'date': '...', 'pct': 80}, ...], 'Science': ...}
+    subject_performance = {}
 
     for r in results:
         if not r.get('max_score'):
             continue
 
         pct = (r['score'] / r['max_score']) * 100
-        et = r.get('test_type')
-
-        exam_map.setdefault(et, []).append(pct)
+        
+        # For Overall Stats
+        et = r.get('test_types') # Changed from 'test_type' to 'test_types' to match data entry
+        if et:
+            exam_map.setdefault(et, []).append(pct)
 
         if r.get('exam_date'):
             timeline.append({
                 'date': r['exam_date'],
                 'percentage': round(pct, 2)
             })
+            
+            # For Subject Stats
+            subj = r.get('subject')
+            if subj:
+                subject_performance.setdefault(subj, []).append({
+                    'date': r['exam_date'],
+                    'percentage': round(pct, 2)
+                })
 
     exam_avg = {
         k: round(sum(v) / len(v), 2)
         for k, v in exam_map.items()
-        
     }
 
     timeline = sorted(timeline, key=lambda x: x['date'])
+    
+    # Sort subject performance by date too
+    for subj in subject_performance:
+        subject_performance[subj] = sorted(subject_performance[subj], key=lambda x: x['date'])
 
     return render_template(
         'statistics.html',
         exam_avg=exam_avg,
         timeline=timeline,
-        streak=user.get('login_streak', 0)
+        streak=user.get('login_streak', 0),
+        productivity={
+            'goals': {'total': total_goals, 'completed': completed_goals, 'pct': goals_pct},
+            'tasks': {'total': total_tasks, 'completed': completed_tasks, 'pct': tasks_pct}
+        },
+        subject_performance=subject_performance,
+        subjects=sorted(list(subject_performance.keys())) # Only show subjects that have data
     )
 
 

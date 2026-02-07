@@ -1,90 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Statistics</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+
 <body>
-{% block content %}
+    {% block content %}
 
-<div class="dashboard-layout-statistics">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <a href="{{ url_for('profile_resume') }}">{{ name }}</a>
-        </div>
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('profile_dashboard') }}" class="nav-item">Home</a>
-            <a href="{{ url_for('academic_dashboard') }}" class="nav-item">Academic</a>
-            <a href="{{ url_for('interests_dashboard') }}" class="nav-item">Interests</a>
-            <a href="{{ url_for('statistics_dashboard') }}" class="nav-item active">Statistics</a>
-        </nav>
-        <div class="sidebar-footer">
-            <a id="themeToggle" class="nav-item">
-    Toggle theme
-            </a>
+    <div class="dashboard-layout-statistics">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('profile_resume') }}">{{ name }}</a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('profile_dashboard') }}" class="nav-item">Home</a>
+                <a href="{{ url_for('academic_dashboard') }}" class="nav-item">Academic</a>
+                <a href="{{ url_for('interests_dashboard') }}" class="nav-item">Interests</a>
+                <a href="{{ url_for('statistics_dashboard') }}" class="nav-item active">Statistics</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a id="themeToggle" class="nav-item">
+                    Toggle theme
+                </a>
 
-            <a href="{{ url_for('about') }}" class="nav-item">Settings</a>
-            <a href="{{ url_for('about') }}" class="nav-item">Contact</a>
-            <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
-        </div>
-    </aside>
+                <a href="{{ url_for('about') }}" class="nav-item">Settings</a>
+                <a href="{{ url_for('about') }}" class="nav-item">Contact</a>
+                <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
+            </div>
+        </aside>
 
 
-    <main class="main-content">
-        <h2>Statistics</h2>
-<br>
-<br>
-        <div class="study-island">
-            <h3>Daily Streak</h3>
-            <div class="streak-box">{{ streak }} Days</div>
-        </div>
-<br>
-<br>
-<br>
-        <div class="study-island">
-            <h3>Exam Performance (Average)</h3>
-            <canvas id="barChart"></canvas>
-        </div>
-<br>
-<br>
-<br>
-        <div class="study-island">
-            <h3>Exam Progress Over Time</h3>
-            <canvas id="lineChart"></canvas>
-        </div>
-        <br>
-<br>
-<br>
-<br>
-    
-    </main>
-</div>
+        <main class="main-content">
+            <h2>Statistics</h2>
+            <!-- Grid Container for Statistics -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+
+                <!-- 1. Daily Streak -->
+                <div class="study-island"
+                    style="display: flex; flex-direction: column; justify-content: center; min-height: 200px;">
+                    <h3>Daily Streak</h3>
+                    <div class="streak-box"
+                        style="font-size: 3em; font-weight: 700; margin-top: 10px; color: var(--accent);">{{ streak }}
+                        Days</div>
+                </div>
+
+                <!-- 2. Productivity Overview -->
+                <div class="study-island"
+                    style="display: flex; flex-direction: column; justify-content: center; min-height: 200px;">
+                    <h3>Productivity Overview</h3>
+                    <div class="productivity-container"
+                        style="display:flex; flex-direction: column; gap:16px; margin-top:15px;">
+                        <!-- Goals -->
+                        <div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="font-weight:600; font-size:14px;">Goals</span>
+                                <span style="color:var(--text-muted); font-size:13px;">{{ productivity.goals.completed
+                                    }}/{{ productivity.goals.total }}</span>
+                            </div>
+                            <div class="progress-bar-track"
+                                style="height:10px; border-radius:5px; background:var(--bg-tertiary);">
+                                <div class="progress-bar-fill"
+                                    style="width:{{ productivity.goals.pct }}%; background:var(--tick-color); border-radius:5px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tasks -->
+                        <div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="font-weight:600; font-size:14px;">Tasks</span>
+                                <span style="color:var(--text-muted); font-size:13px;">{{ productivity.tasks.completed
+                                    }}/{{ productivity.tasks.total }}</span>
+                            </div>
+                            <div class="progress-bar-track"
+                                style="height:10px; border-radius:5px; background:var(--bg-tertiary);">
+                                <div class="progress-bar-fill"
+                                    style="width:{{ productivity.tasks.pct }}%; background:var(--tick-color); border-radius:5px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Exam Performance (Average) - BIGGER -->
+                <div class="study-island" style="min-height: 400px; display:flex; flex-direction:column;">
+                    <h3>Exam Performance (Average)</h3>
+                    <div style="flex:1; position: relative; min-height: 300px;">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 4. Exam Progress Over Time - BIGGER -->
+                <div class="study-island" style="min-height: 400px; display:flex; flex-direction:column;">
+                    <h3>Exam Progress (Overall)</h3>
+                    <div style="flex:1; position: relative; min-height: 300px;">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 5. Subject Analytics (Spans Full Width) - LARGEST -->
+                <div class="study-island"
+                    style="grid-column: 1 / -1; min-height: 500px; display:flex; flex-direction:column;">
+                    <div class="study-island-header" style="margin-bottom: 20px;">
+                        <h3>Subject-wise Performance</h3>
+                        <select id="subjectSelect"
+                            style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg-tertiary); color:var(--text-primary); font-size:14px;">
+                            {% for subj in subjects %}
+                            <option value="{{ subj }}">{{ subj }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="flex:1; position:relative; min-height: 350px; width:100%;">
+                        <canvas id="subjectChart"></canvas>
+                    </div>
+                    {% if not subjects %}
+                    <p style="text-align:center; padding:40px; color:var(--text-muted); font-size: 16px;">No subject
+                        data available yet. Add exam results to see analytics.</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </main>
+    </div>
 </body>
 
 <script>
-(function () {
-    const root = document.documentElement;
-    const toggle = document.getElementById("themeToggle");
+    (function () {
+        const root = document.documentElement;
+        const toggle = document.getElementById("themeToggle");
 
-    const savedTheme = localStorage.getItem("studyos-theme");
-    if (savedTheme) {
-        root.setAttribute("data-theme", savedTheme);
-    }
+        const savedTheme = localStorage.getItem("studyos-theme");
+        if (savedTheme) {
+            root.setAttribute("data-theme", savedTheme);
+        }
 
-    if (toggle) {
-        toggle.addEventListener("click", () => {
-            const next =
-                root.getAttribute("data-theme") === "dark"
-                ? "light"
-                : "dark";
+        if (toggle) {
+            toggle.addEventListener("click", () => {
+                const next =
+                    root.getAttribute("data-theme") === "dark"
+                        ? "light"
+                        : "dark";
 
-            root.setAttribute("data-theme", next);
-            localStorage.setItem("studyos-theme", next);
-        });
-    }
-})();
+                root.setAttribute("data-theme", next);
+                localStorage.setItem("studyos-theme", next);
+            });
+        }
+    })();
 </script>
 
 
@@ -94,36 +160,118 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-const barData = {
-    labels: {{ exam_avg.keys() | list | tojson }},
+    const barData = {
+        labels: {{ exam_avg.keys() | list | tojson }},
     datasets: [{
         label: "Average %",
         data: {{ exam_avg.values() | list | tojson }},
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: 'rgba(75, 192, 192, 1)',
         borderWidth: 1
     }]
 };
 
-new Chart(document.getElementById('barChart'), {
-    type: 'bar',
-    data: barData,
-    options: { responsive: true }
-});
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: barData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
 
-const lineData = {
-    labels: {{ timeline | map(attribute='date') | list | tojson }},
+    const lineData = {
+        labels: {{ timeline | map(attribute = 'date') | list | tojson }},
     datasets: [{
         label: "Progress %",
-        data: {{ timeline | map(attribute='percentage') | list | tojson }},
+        data: {{ timeline | map(attribute = 'percentage') | list | tojson }},
         fill: false,
-        tension: 0.3
-    }]
-};
+        element: {
+        line: {
+            tension: 0.3
+        }
+    }
+        }]
+    };
 
-new Chart(document.getElementById('lineChart'), {
-    type: 'line',
-    data: lineData,
-    options: { responsive: true }
-});
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: lineData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // --- SUBJECT ANALYTICS CHART ---
+    const subjectPerformance = {{ subject_performance | tojson }};
+    const ctxSubj = document.getElementById('subjectChart').getContext('2d');
+    let subjectChart = null;
+
+    function renderSubjectChart(subjectName) {
+        // If chart exists, destroy it before re-rendering
+        if (subjectChart) {
+            subjectChart.destroy();
+        }
+
+        const dataPoints = subjectPerformance[subjectName] || [];
+        const labels = dataPoints.map(d => d.date);
+        const values = dataPoints.map(d => d.percentage);
+
+        subjectChart = new Chart(ctxSubj, {
+            type: 'line', // Can change to 'bar' if preferred
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: subjectName + ' Performance (%)',
+                    data: values,
+                    borderColor: '#8b5cf6', // A nice purple accent
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: { display: true, text: 'Percentage' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Initial Render
+    const subjectSelect = document.getElementById('subjectSelect');
+    if (subjectSelect && subjectSelect.value) {
+        renderSubjectChart(subjectSelect.value);
+
+        // Listen for changes
+        subjectSelect.addEventListener('change', function () {
+            renderSubjectChart(this.value);
+        });
+    }
 </script>
 
 {% endblock %}

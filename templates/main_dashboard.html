@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,163 +8,166 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
+
 <body>
-<div class="dashboard-layout">
+    <div class="dashboard-layout">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <a href="{{ url_for('profile_resume') }}">{{ name }}</a>
-        </div>
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('profile_dashboard') }}" class="nav-item active">Home</a>
-            <a href="{{ url_for('academic_dashboard') }}" class="nav-item">Academic</a>
-            <a href="{{ url_for('interests_dashboard') }}" class="nav-item">Interests</a>
-            <a href="{{ url_for('statistics_dashboard') }}" class="nav-item">Statistics</a>
-        </nav>
-        <div class="sidebar-footer">
-            <a id="themeToggle" class="nav-item">
-    Toggle theme
-            </a>
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('profile_resume') }}">{{ name }}</a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('profile_dashboard') }}" class="nav-item active">Home</a>
+                <a href="{{ url_for('academic_dashboard') }}" class="nav-item">Academic</a>
+                <a href="{{ url_for('interests_dashboard') }}" class="nav-item">Interests</a>
+                <a href="{{ url_for('statistics_dashboard') }}" class="nav-item">Statistics</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a id="themeToggle" class="nav-item">
+                    Toggle theme
+                </a>
 
-            <a href="{{ url_for('about') }}" class="nav-item">Settings</a>
-            <a href="{{ url_for('about') }}" class="nav-item">Contact</a>
-            <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
-        </div>
-    </aside>
+                <a href="{{ url_for('about') }}" class="nav-item">Settings</a>
+                <a href="{{ url_for('about') }}" class="nav-item">Contact</a>
+                <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
+            </div>
+        </aside>
 
-    <!-- MAIN -->
-    <main class="main-content">
+        <!-- MAIN -->
+        <main class="main-content">
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
+            <div class="alert alert-{{ category }}">{{ message }}</div>
             {% endfor %}
-        {% endif %}
-        {% endwith %}
-
-        <!-- TOP ROW: Academic (left, large) | Profile + Careers (right, stacked) -->
-        <div class="dashboard-top">
-
-            <!-- TOP-LEFT: Academic Island -->
-            <a href="{{ url_for('academic_dashboard') }}" class="island island-academic" style="text-decoration:none;">
-                <h3>Academic</h3>
-                <p>Your syllabus, chapters &amp; study progress</p>
-                <div class="island-chart">
-                    <canvas id="academicDonut"></canvas>
-                    <div class="chart-center-text">{{ overall_progress }}%</div>
-                </div>
-            </a>
-
-            <!-- TOP-RIGHT: two stacked islands -->
-            <div class="dashboard-top-right">
-
-                <!-- Profile Island -->
-                <a href="{{ url_for('profile_resume') }}" class="island" style="text-decoration:none;">
-                    <h3>Profile</h3>
-                    <div class="island-profile-snapshot">
-                        <p><strong>{{ name }}</strong></p>
-                        <p>{{ purpose_display }}{% if academic_summary %} · {{ academic_summary }}{% endif %}</p>
-                        <span class="snapshot-cta">View full profile →</span>
-                    </div>
-                </a>
-
-                <!-- Career / Interests Island -->
-                <a href="{{ url_for('interests_dashboard') }}" class="island" style="text-decoration:none;">
-                    <h3>Careers</h3>
-                    <p>Explore paths, courses &amp; internships</p>
-                    {% if saved_careers %}
-                    <div class="island-careers-list">
-                        {% for career in saved_careers %}
-                            <span class="career-chip">{{ career.name }}</span>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="island-careers-list" style="margin-top:auto;">
-                        <span class="career-chip" style="color:var(--text-muted);">No careers saved yet</span>
-                    </div>
-                    {% endif %}
-                </a>
-
-            </div>
-        </div>
-
-        <!-- BOTTOM: Progress Strip -->
-        <div class="progress-strip">
-            <div class="progress-strip-header">
-                <h4>Overall Academic Progress</h4>
-                <span>{{ overall_progress }}%</span>
-            </div>
-            <div class="progress-bar-track">
-                <div class="progress-bar-fill" style="width:{{ overall_progress }}%"></div>
-            </div>
-
-            {% if subject_progress %}
-            <div class="subject-mini-bars">
-                {% for subject, pct in subject_progress.items() %}
-                <div class="subject-mini-bar">
-                    <div class="subject-mini-bar-label">
-                        <span>{{ subject }}</span>
-                        <span>{{ pct }}%</span>
-                    </div>
-                    <div class="subject-mini-bar-track">
-                        <div class="subject-mini-bar-fill" style="width:{{ pct }}%"></div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
             {% endif %}
-        </div>
+            {% endwith %}
 
-    </main>
-</div>
+            <!-- TOP ROW: Academic (left, large) | Profile + Careers (right, stacked) -->
+            <div class="dashboard-top">
 
-<script>
-(function(){
-    var ctx = document.getElementById('academicDonut').getContext('2d');
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            datasets: [{
-                data: [{{ overall_progress }}, {{ 100 - overall_progress }}],
+                <!-- TOP-LEFT: Academic Island -->
+                <a href="{{ url_for('academic_dashboard') }}" class="island island-academic"
+                    style="text-decoration:none;">
+                    <h3>Academic</h3>
+                    <p>Your syllabus, chapters &amp; study progress</p>
+                    <div class="island-chart">
+                        <canvas id="academicDonut"></canvas>
+                        <div class="chart-center-text">{{ overall_progress }}%</div>
+                    </div>
+                </a>
+
+                <!-- TOP-RIGHT: two stacked islands -->
+                <div class="dashboard-top-right">
+
+                    <!-- Profile Island -->
+                    <a href="{{ url_for('profile_resume') }}" class="island" style="text-decoration:none;">
+                        <h3>Profile</h3>
+                        <div class="island-profile-snapshot">
+                            <p><strong>{{ name }}</strong></p>
+                            <p>{{ purpose_display }}{% if academic_summary %} · {{ academic_summary }}{% endif %}</p>
+                            <span class="snapshot-cta">View full profile →</span>
+                        </div>
+                    </a>
+
+                    <!-- Career / Interests Island -->
+                    <a href="{{ url_for('interests_dashboard') }}" class="island" style="text-decoration:none;">
+                        <h3>Careers</h3>
+                        <p>Explore paths, courses &amp; internships</p>
+                        {% if saved_careers %}
+                        <div class="island-careers-list">
+                            {% for career in saved_careers %}
+                            <span class="career-chip">{{ career.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="island-careers-list" style="margin-top:auto;">
+                            <span class="career-chip" style="color:var(--text-muted);">No careers saved yet</span>
+                        </div>
+                        {% endif %}
+                    </a>
+
+                </div>
+            </div>
+
+            <!-- BOTTOM: Progress Strip -->
+            <div class="progress-strip">
+                <div class="progress-strip-header">
+                    <h4>Overall Academic Progress</h4>
+                    <span>{{ overall_progress }}%</span>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" style="width:{{ overall_progress }}%"></div>
+                </div>
+
+                {% if subject_progress %}
+                <div class="subject-mini-bars">
+                    {% for subject, pct in subject_progress.items() %}
+                    <div class="subject-mini-bar">
+                        <div class="subject-mini-bar-label">
+                            <span>{{ subject }}</span>
+                            <span>{{ pct }}%</span>
+                        </div>
+                        <div class="subject-mini-bar-track">
+                            <div class="subject-mini-bar-fill" style="width:{{ pct }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            var ctx = document.getElementById('academicDonut').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [{{ overall_progress }}, {{ 100 - overall_progress }}],
                 backgroundColor: ['#666666', '#27272a'],
                 borderWidth: 0
             }]
         },
-        options: {
+            options: {
             responsive: true,
-            maintainAspectRatio: true,
-            cutout: '68%',
-            plugins: { legend: {display:false}, tooltip: {enabled:false} }
+                maintainAspectRatio: true,
+                    cutout: '68%',
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } }
         }
     });
-})();
-</script>
+}) ();
+    </script>
 
-<script>
-(function () {
-    const root = document.documentElement;
-    const toggle = document.getElementById("themeToggle");
+    <script>
+        (function () {
+            const root = document.documentElement;
+            const toggle = document.getElementById("themeToggle");
 
-    const savedTheme = localStorage.getItem("studyos-theme");
-    if (savedTheme) {
-        root.setAttribute("data-theme", savedTheme);
-    }
+            const savedTheme = localStorage.getItem("studyos-theme");
+            if (savedTheme) {
+                root.setAttribute("data-theme", savedTheme);
+            }
 
-    if (toggle) {
-        toggle.addEventListener("click", () => {
-            const next =
-                root.getAttribute("data-theme") === "dark"
-                ? "light"
-                : "dark";
+            if (toggle) {
+                toggle.addEventListener("click", () => {
+                    const next =
+                        root.getAttribute("data-theme") === "dark"
+                            ? "light"
+                            : "dark";
 
-            root.setAttribute("data-theme", next);
-            localStorage.setItem("studyos-theme", next);
-        });
-    }
-})();
-</script>
+                    root.setAttribute("data-theme", next);
+                    localStorage.setItem("studyos-theme", next);
+                });
+            }
+        })();
+    </script>
 
 </body>
+
 </html>
