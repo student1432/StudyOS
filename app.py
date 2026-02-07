@@ -934,7 +934,8 @@ def statistics_dashboard():
             'tasks': {'total': total_tasks, 'completed': completed_tasks, 'pct': tasks_pct}
         },
         subject_performance=subject_performance,
-        subjects=sorted(list(subject_performance.keys())) # Only show subjects that have data
+        subjects=sorted(list(subject_performance.keys())), # Only show subjects that have data
+        name=user.get('name', 'Student')
     )
 
 
