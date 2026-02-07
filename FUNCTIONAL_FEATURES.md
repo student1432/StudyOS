@@ -48,6 +48,15 @@
   - Students' progress calculations automatically respect these exclusions
 - **URL**: `/institution/class/<class_id>/syllabus`
 
+### 6. **Master Academic Library**
+- **Location**: Master Library Sidebar → Master Library
+- **How it works**:
+  - Browse all high school boards (CBSE, ICSE, State Boards) and grades (9-12).
+  - Search for specific chapters or topics across the entire database.
+  - Drill down into chapter topics and overviews.
+  - Filter by grade or section (High School / Competitive Exams).
+- **URL**: `/master-library`
+
 ---
 
 ## 🔄 How Data Flows

@@ -251,25 +251,46 @@ POST /api/notifications/{id}/mark_read
 
 ## ✨ What's Working Now
 
-1. ✅ Teacher can view ALL students (no limits)
-2. ✅ Teacher can see ALL at-risk students (no limits)
-3. ✅ Teacher can exclude chapters → Students see updated progress
-4. ✅ Teacher can send nudges → Students receive notifications
-5. ✅ Teacher can broadcast → All students notified
-6. ✅ Sidebar fully functional on all pages
-7. ✅ 3-tier exclusion system working
-8. ✅ Student detail view with progress/results/sessions
-9. ✅ Invite code generation and joining
-10. ✅ Real-time notification toasts for students
+1. ✅ **Master Academic Library**: A comprehensive repository of all syllabi, boards, and exams accessible for exploration.
+2. ✅ Teacher can view ALL students (no limits).
+3. ✅ Teacher can see ALL at-risk students (no limits).
+4. ✅ Teacher can exclude chapters → Students see updated progress.
+5. ✅ Sidebar fully functional on all pages.
+6. ✅ 3-tier exclusion system working.
+7. ✅ Student detail view with progress/results/sessions.
+8. ✅ Invite code generation and joining.
 
 ---
 
-## 🎯 Next Steps (Optional Enhancements)
+## ⚠️ Known Issues (Institution Module)
 
-1. **Deploy Cloud Functions** for auto-aggregation
-2. **Add Heatmap Visualization** (requires aggregated data)
-3. **Export Reports** (CSV/PDF)
-4. **Bulk Actions** (exclude multiple chapters at once)
-5. **Email Notifications** (in addition to in-app)
-6. **Analytics Dashboard** (trends, predictions)
-7. **Mobile Responsive** (optimize for tablets/phones)
+### 1. **Broadcast & Nudge Reliability**
+**Current State**: While the backend logic is implemented, notifications may not consistently appear for students due to:
+- **Missing Firestore Index**: The query in `/api/notifications` requires a composite index on `recipient_uid`, `read`, and `created_at`.
+- **Property Mismatch**: `static/notifications.js` expects `sender` but the API returns `sender_name`.
+- **Scope**: Broadcasts are institution-wide by default; class-specific broadcast UI is missing from the dashboard.
+
+---
+
+## 🎯 Next Steps & Fix Guide
+
+### 🛠 Fix Steps for Broadcast/Nudge:
+1.  **Firestore Indexing**:
+    - Go to Firebase Console → Firestore → Indexes.
+    - Create a composite index for the `notifications` subcollection:
+      - `recipient_uid`: Ascending
+      - `read`: Ascending
+      - `created_at`: Descending
+2.  **Frontend Fix**:
+    - In `static/notifications.js`, update `notif.sender` to `notif.sender_name` to match the backend payload.
+3.  **UI Enhancement**:
+    - Add a `<select>` dropdown to the Broadcast island in `institution_dashboard.html` to allow teachers to target specific classes.
+
+### 🚀 Future Enhancements:
+1. **Deploy Cloud Functions** for auto-aggregation.
+2. **Add Heatmap Visualization** (requires aggregated data).
+3. **Export Reports** (CSV/PDF).
+4. **Bulk Actions** (exclude multiple chapters at once).
+5. **Email Notifications** (in addition to in-app).
+6. **Analytics Dashboard** (trends, predictions).
+7. **Mobile Responsive** (optimize for tablets/phones).
