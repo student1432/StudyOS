@@ -160,14 +160,7 @@ if __name__ == '__main__':
    - Statistics calculate
    ```
 
-8. **Projects Dashboard Test**
-   ```
-   URL: http://localhost:5000/projects
-   - Add a project
-   - Change status
-   ```
-
-9. **Logout Test**
+7. **Logout Test**
    ```
    - Click logout
    - Should redirect to login

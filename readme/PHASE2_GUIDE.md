@@ -26,7 +26,7 @@ The profile dashboard is the **central identity hub** - like LinkedIn for studen
 
 ### Navigation
 - Edit Profile button → Profile Edit page
-- Dashboard buttons → Academic, Goals, Tasks, Results, Projects
+- Dashboard buttons → Academic, Goals, Tasks, Results
 - About Platform → Platform information
 - Logout → Clears session
 
@@ -216,39 +216,6 @@ Record and analyze exam performance over time.
 
 ---
 
-## 7. Projects Management
-
-### Purpose
-Track long-term academic projects with status updates.
-
-### Features
-- Create projects with title and description
-- Link to subjects
-- Track status (Not Started, In Progress, Completed, On Hold)
-- Update status dynamically
-- Delete projects
-
-### Project Structure
-```javascript
-{
-  "id": 0,
-  "title": "Science Fair Project",
-  "description": "Research on renewable energy sources",
-  "subject": "Physics",
-  "status": "In Progress",
-  "created_at": "2026-01-28T10:00:00"
-}
-```
-
-### Status Options
-1. **Not Started**: Project planned but not begun
-2. **In Progress**: Actively working
-3. **Completed**: Finished
-4. **On Hold**: Paused temporarily
-
-### Route
-`/projects`
-
 ---
 
 ## Data Isolation & Security
@@ -288,7 +255,6 @@ Phase 1 users don't have Phase 2 fields.
 - `goals`: Empty list
 - `tasks`: Empty list
 - `exam_results`: Empty list
-- `projects`: Empty list
 
 ---
 
@@ -302,7 +268,7 @@ Phase 1 users don't have Phase 2 fields.
 
 ### Editable (User-Controlled)
 **Location**: Firestore user documents
-**Content**: Goals, tasks, results, projects, profile info
+**Content**: Goals, tasks, results, profile info
 **Why**: Personal planning and tracking
 **Who controls**: Individual students
 
@@ -326,9 +292,7 @@ Phase 1 users don't have Phase 2 fields.
    ↓
 7. Results Dashboard (Add exam scores)
    ↓
-8. Projects Dashboard (Update project status)
-   ↓
-9. Logout
+8. Logout
 ```
 
 ### Quick Navigation
@@ -388,7 +352,7 @@ All dashboards are fully responsive:
 | Aspect | Phase 1 | Phase 2 |
 |--------|---------|---------|
 | Dashboard | Single generic | LinkedIn-style profile hub |
-| Planning | Basic todos | Goals + Tasks + Projects |
+| Planning | Basic todos | Goals + Tasks |
 | Academic | Placeholder | Full dynamic syllabus |
 | Results | Placeholder | Full tracking + analytics |
 | Profile | Name only | Bio + Skills + Hobbies + Certs |
@@ -435,13 +399,6 @@ All dashboards are fully responsive:
 3. Check statistics update
 4. Verify percentage badge color
 5. Delete result → should remove
-
-### Test Projects
-1. Go to Projects Dashboard
-2. Create project with subject
-3. Change status → should update
-4. Verify color coding
-5. Delete → should remove
 
 ---
 
