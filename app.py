@@ -884,47 +884,6 @@ def statistics_dashboard():
     )
 
 
-# ============================================================================
-# PROJECTS (FUTURE FEATURE)
-# ============================================================================
-
-# @app.route('/projects', methods=['GET', 'POST'])
-# @require_login
-# def projects_dashboard():
-#     uid = session['uid']
-#     if request.method == 'POST':
-#         action = request.form.get('action')
-#         if action == 'add':
-#             title = request.form.get('title')
-#             if title:
-#                 user_data = get_user_data(uid)
-#                 projects = user_data.get('projects', [])
-#                 projects.append({
-#                     'id': len(projects), 'title': title,
-#                     'description': request.form.get('description', ''),
-#                     'subject': request.form.get('subject', ''),
-#                     'status': request.form.get('status', 'Not Started'),
-#                     'created_at': datetime.utcnow().isoformat()
-#                 })
-#                 db.collection('users').document(uid).update({'projects': projects})
-#                 flash('Project added!', 'success')
-#         elif action == 'update_status':
-#             project_id = int(request.form.get('project_id'))
-#             user_data = get_user_data(uid)
-#             projects = user_data.get('projects', [])
-#             for p in projects:
-#                 if p.get('id') == project_id:
-#                     p['status'] = request.form.get('status')
-#                     break
-#             db.collection('users').document(uid).update({'projects': projects})
-#         elif action == 'delete':
-#             project_id = int(request.form.get('project_id'))
-#             user_data = get_user_data(uid)
-#             projects = [p for p in user_data.get('projects', []) if p.get('id') != project_id]
-#             db.collection('users').document(uid).update({'projects': projects})
-#             flash('Project deleted!', 'success')
-#         return redirect(url_for('academic_dashboard'))
-#     return redirect(url_for('academic_dashboard'))
 
 # ============================================================================
 # INTERESTS → CAREERS → COURSES → INTERNSHIPS
