@@ -120,10 +120,18 @@
                 remaining--;
                 render();
 
+                const now = new Date();
+                const localHour = now.getHours();
+                const localWeekday = (now.getDay() + 6) % 7; // ISO: 0=Mon, 6=Sun
+
                 fetch('/study-mode/time', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ seconds: 1 })
+                    body: JSON.stringify({
+                        seconds: 1,
+                        local_hour: localHour,
+                        local_weekday: localWeekday
+                    })
                 });
 
                 if (remaining <= 0) {

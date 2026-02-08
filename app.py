@@ -800,7 +800,11 @@ def study_mode():
 @require_login
 def study_time():
     uid = session['uid']
-    seconds = int(request.json['seconds'])
+    data = request.json
+    seconds = int(data.get('seconds', 0))
+    local_hour = data.get('local_hour')
+    local_weekday = data.get('local_weekday')
+
     db.collection('users').document(uid).set({
         'study_mode': {'total_seconds': Increment(seconds)}
     }, merge=True)
@@ -811,11 +815,18 @@ def study_time():
     hour_id = now.strftime("%Y-%m-%d-%H")
     session_ref = db.collection('users').document(uid).collection('study_sessions').document(hour_id)
     
-    session_ref.set({
+    session_data = {
         'start_time': now.isoformat(),
         'duration_seconds': Increment(seconds),
         'last_updated': now.isoformat()
-    }, merge=True)
+    }
+    
+    if local_hour is not None:
+        session_data['local_hour'] = local_hour
+    if local_weekday is not None:
+        session_data['local_weekday'] = local_weekday
+        
+    session_ref.set(session_data, merge=True)
     
     return jsonify(ok=True)
 
@@ -1411,15 +1422,25 @@ def institution_dashboard():
             
             for s in sessions_ref:
                 s_data = s.to_dict()
-                start_time_str = s_data.get('start_time')
-                if start_time_str:
-                    try:
-                        dt = datetime.fromisoformat(start_time_str)
-                        # Key: "DayIndex-Hour" (e.g., "0-14" for Monday 2 PM)
-                        key = f"{dt.weekday()}-{dt.hour}"
-                        heatmap_data[key] += 1
-                    except:
-                        pass
+                
+                # Check for locally captured hour/weekday (preferred for timezone accuracy)
+                local_h = s_data.get('local_hour')
+                local_w = s_data.get('local_weekday')
+                
+                if local_h is not None and local_w is not None:
+                    key = f"{local_w}-{local_h}"
+                    heatmap_data[key] += 1
+                else:
+                    # Fallback to UTC extraction for legacy sessions
+                    start_time_str = s_data.get('start_time')
+                    if start_time_str:
+                        try:
+                            dt = datetime.fromisoformat(start_time_str)
+                            # Key: "DayIndex-Hour" (e.g., "0-14" for Monday 2 PM)
+                            key = f"{dt.weekday()}-{dt.hour}"
+                            heatmap_data[key] += 1
+                        except:
+                            pass
     
     # --- 3. ISLAND B: PREDICTIVE ENGINE (AI Logic) ---
     at_risk_students = []
@@ -1629,9 +1650,15 @@ def manage_class_syllabus(class_id):
     exclusions_doc = db.collection('classes').document(class_id).collection('excluded_chapters').document('current').get()
     exclusions = exclusions_doc.to_dict().get('chapters', {}) if exclusions_doc.exists else {}
     
-    # Get syllabus (simplified - you'd fetch based on class metadata)
-    # For now, using a sample structure
-    syllabus = get_syllabus('highschool', 'CBSE', '10')  # Placeholder
+    # Get syllabus based on class metadata
+    purpose = class_data.get('purpose', 'highschool')
+    board = class_data.get('board', 'CBSE')
+    grade = class_data.get('grade', '10')
+    
+    syllabus = get_syllabus(purpose, board, grade) 
+    
+    if not syllabus:
+        syllabus = {} # Fallback to empty if not found
     
     context = {
         'user': user_data,
