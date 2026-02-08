@@ -11,9 +11,9 @@
     <div class="dashboard-layout">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <a href="#">{{ user.get('name', 'Admin') }}</a>
+                <a href="#">{{ user.get('name', 'teacher') }}</a>
                 <span style="font-size:12px; color:var(--text-muted); display:block; margin-top:4px;">{{
-                    user.get('role', 'admin').title() }}</span>
+                    user.get('role', 'teacher').title() }}</span>
             </div>
             <nav class="sidebar-nav">
                 <a href="{{ url_for('institution_dashboard') }}" class="nav-item">Dashboard</a>

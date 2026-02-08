@@ -32,7 +32,7 @@
             <div class="header-row">
                 <h1>Institution Overview</h1>
                 <div class="actions">
-                    <button id="inviteBtn" class="btn-primary">Generate Invite</button>
+                    <button id="inviteBtn" class="btn-secondary">Generate Invite</button>
                     <!-- Invite Modal placeholder -->
                 </div>
             </div>
@@ -40,7 +40,7 @@
             <div class="inst-grid">
 
                 <!-- ISLAND A: BEHAVIORAL HEATMAP -->
-                <div class="island">
+                <div class="island heatmap-island">
                     <h3>Institutional Behavior Heatmap</h3>
                     <div id="heatmapContainer" class="heatmap-grid"
                         style="grid-template-columns: 40px repeat(12, 1fr) 10px repeat(12, 1fr);">
@@ -63,7 +63,8 @@
                         {% elif count > 0 %} {% set level = 1 %}
                         {% endif %}
                         <div class="heatmap-cell level-{{ level }}"
-                            title="{{ days[d] }} {{ h }}:00 - {{ count }} sessions"></div>
+                            title="{{ days[d] }} {{ h }}:00 - {{ count }} sessions">
+                        </div>
                         {% if h == 11 %} <div class="heatmap-spacer"></div> {% endif %}
                         {% endfor %}
                         {% endfor %}
@@ -114,13 +115,13 @@
                     </div>
                 </div>
 
-                <!--ISLAND C: SYLLABUS SYNC-->
+                <!--ISLAND C: CLASS MANAGEMENT-->
                 <div class="island syllabus-island">
                     <h3>Class Management</h3>
                     <div class="class-list">
                         {% for cid, cdata in classes.items() %}
                         <div class="class-row">
-                            <span>{{ cdata.get('name', cid) }}</span>
+                            <span style="font-weight: 600;">{{ cdata.get('name', cid) }}</span>
                             <span class="student-count">{{ cdata.get('students', [])|length }} Students</span>
                             <a href="{{ url_for('manage_class_syllabus', class_id=cid) }}" class="small-btn">Manage
                                 Syllabus</a>
@@ -133,10 +134,22 @@
 
                 <!--ISLAND D: BROADCAST CENTER-->
                 <div class="island broadcast-island">
-                    <h3>Broadcast</h3>
+                    <h3>Broadcast Center</h3>
                     <form method="POST" action="{{ url_for('broadcast_message') }}">
-                        <textarea name="message" placeholder="Send a message to all students..." required></textarea>
-                        <button type="submit" class="btn-secondary">Send Announcement</button>
+                        <div style="margin-bottom: 12px;">
+                            <label
+                                style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Target
+                                Recipients</label>
+                            <select name="class_id"
+                                style="width: 100%; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border); padding: 8px; border-radius: 6px; font-family: inherit;">
+                                <option value="">All Students (Global)</option>
+                                {% for cid, cdata in classes.items() %}
+                                <option value="{{ cid }}">{{ cdata.get('name', cid) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <textarea name="message" placeholder="Type your announcement here..." required></textarea>
+                        <button type="submit" class="btn-secondary" style="width: 100%;">Send Announcement</button>
                     </form>
                 </div>
 
@@ -193,6 +206,7 @@
             };
         });
     </script>
+    {% include 'notifications_snippet.html' %}
 </body>
 
 </html>

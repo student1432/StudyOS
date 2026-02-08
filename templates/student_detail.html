@@ -32,17 +32,17 @@
                         <div class="stat-box">
                             <span class="stat-label">Momentum</span>
                             <span
-                                class="stat-value {% if progress_data.momentum < 0 %}negative{% else %}positive{% endif %}">
-                                {{ progress_data.momentum }}%
+                                class="stat-value {% if progress_data.get('momentum', 0) < 0 %}negative{% else %}positive{% endif %}">
+                                {{ progress_data.get('momentum', 0) }}%
                             </span>
                         </div>
                         <div class="stat-box">
                             <span class="stat-label">Consistency</span>
-                            <span class="stat-value">{{ progress_data.consistency }}%</span>
+                            <span class="stat-value">{{ progress_data.get('consistency', 0) }}%</span>
                         </div>
                         <div class="stat-box">
                             <span class="stat-label">Readiness</span>
-                            <span class="stat-value">{{ progress_data.readiness }}%</span>
+                            <span class="stat-value">{{ progress_data.get('readiness', 0) }}%</span>
                         </div>
                     </div>
                 </div>
@@ -53,12 +53,12 @@
                     <div class="progress-summary">
                         <div class="stat-box">
                             <span class="stat-label">Overall</span>
-                            <span class="stat-value">{{ progress_data.overall }}%</span>
+                            <span class="stat-value">{{ progress_data.get('overall', 0) }}%</span>
                         </div>
                         <div class="stat-box">
                             <span class="stat-label">Completed</span>
-                            <span class="stat-value">{{ progress_data.total_completed }}/{{ progress_data.total_chapters
-                                }}</span>
+                            <span class="stat-value">{{ progress_data.get('total_completed', 0) }}/{{
+                                progress_data.get('total_chapters', 0) }}</span>
                         </div>
                     </div>
 

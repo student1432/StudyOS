@@ -23,7 +23,7 @@
         toast.className = `notification-toast ${notif.type}`;
         toast.innerHTML = `
             <div class="notification-header">
-                <span class="notification-sender">${notif.sender}</span>
+                <span class="notification-sender">${notif.sender_name}</span>
                 <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
             </div>
             <div class="notification-message">${notif.message}</div>

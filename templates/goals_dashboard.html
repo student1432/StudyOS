@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Goals - Student Platform</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+
 <body>
     <div class="container">
         <div class="dashboard-card">
@@ -13,101 +15,102 @@
                 <h1>My Goals</h1>
                 <a href="{{ url_for('profile_dashboard') }}" class="btn btn-secondary">Back to Profile</a>
             </div>
-            
+
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
             {% endwith %}
-            
+
             <div class="todo-section">
                 <h2>Add New Goal</h2>
                 <form method="POST" action="{{ url_for('goals_dashboard') }}" class="goal-form">
                     <input type="hidden" name="action" value="add">
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="title">Goal Title</label>
                             <input type="text" id="title" name="title" placeholder="e.g., Master Calculus" required>
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="description">Description</label>
-                            <textarea id="description" name="description" rows="2" placeholder="What do you want to achieve?"></textarea>
+                            <textarea id="description" name="description" rows="2"
+                                placeholder="What do you want to achieve?"></textarea>
                         </div>
                     </div>
-                    
+
                     <div class="form-row-split">
                         <div class="form-group">
                             <label for="subject">Subject</label>
                             <select id="subject" name="subject">
                                 <option value="">Select subject (optional)</option>
                                 {% for subj in subjects %}
-                                    <option value="{{ subj }}">{{ subj }}</option>
+                                <option value="{{ subj }}">{{ subj }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="target_date">Target Date</label>
                             <input type="date" id="target_date" name="target_date">
                         </div>
                     </div>
-                    
+
                     <button type="submit" class="btn btn-primary">Add Goal</button>
                 </form>
             </div>
-            
+
             <div class="todo-section">
                 <h2>Your Goals</h2>
                 {% if goals %}
-                    <div class="goals-list">
-                        {% for goal in goals %}
-                            <div class="goal-item {% if goal.completed %}completed{% endif %}">
-                                <div class="goal-content">
-                                    <h4>{{ goal.title }}</h4>
-                                    {% if goal.description %}
-                                        <p class="goal-description">{{ goal.description }}</p>
-                                    {% endif %}
-                                    <div class="goal-meta">
-                                        {% if goal.subject %}
-                                            <span class="tag">{{ goal.subject }}</span>
-                                        {% endif %}
-                                        {% if goal.target_date %}
-                                            <span class="goal-date">Target: {{ goal.target_date }}</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="goal-actions">
-                                    <form method="POST" action="{{ url_for('goals_dashboard') }}" style="display: inline;">
-                                        <input type="hidden" name="action" value="toggle">
-                                        <input type="hidden" name="goal_id" value="{{ goal.id }}">
-                                        <button type="submit" class="btn btn-small">
-                                            {% if goal.completed %}
-                                                ✓ Completed
-                                            {% else %}
-                                                Mark Complete
-                                            {% endif %}
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="{{ url_for('goals_dashboard') }}" style="display: inline;">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="goal_id" value="{{ goal.id }}">
-                                        <button type="submit" class="btn btn-small btn-danger">Delete</button>
-                                    </form>
-                                </div>
+                <div class="goals-list">
+                    {% for goal in goals %}
+                    <div class="goal-item {% if goal.completed %}completed{% endif %}">
+                        <div class="goal-content">
+                            <h4>{{ goal.title }}</h4>
+                            {% if goal.description %}
+                            <p class="goal-description">{{ goal.description }}</p>
+                            {% endif %}
+                            <div class="goal-meta">
+                                {% if goal.subject %}
+                                <span class="tag">{{ goal.subject }}</span>
+                                {% endif %}
+                                {% if goal.target_date %}
+                                <span class="goal-date">Target: {{ goal.target_date }}</span>
+                                {% endif %}
                             </div>
-                        {% endfor %}
+                        </div>
+                        <div class="goal-actions">
+                            <form method="POST" action="{{ url_for('goals_dashboard') }}" style="display: inline;">
+                                <input type="hidden" name="action" value="toggle">
+                                <input type="hidden" name="goal_id" value="{{ goal.id }}">
+                                <button type="submit" class="btn btn-small">
+                                    {% if goal.completed %}
+                                    ✓ Completed
+                                    {% else %}
+                                    Mark Complete
+                                    {% endif %}
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('goals_dashboard') }}" style="display: inline;">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="goal_id" value="{{ goal.id }}">
+                                <button type="submit" class="btn btn-small btn-danger">Delete</button>
+                            </form>
+                        </div>
                     </div>
+                    {% endfor %}
+                </div>
                 {% else %}
-                    <p class="empty-message">No goals set yet. Add your first goal above!</p>
+                <p class="empty-message">No goals set yet. Add your first goal above!</p>
                 {% endif %}
             </div>
-            
+
             <div class="dashboard-actions">
                 <div class="button-grid">
                     <a href="{{ url_for('academic_dashboard') }}" class="btn btn-secondary">View Syllabus</a>
@@ -116,5 +119,7 @@
             </div>
         </div>
     </div>
+    {% include 'notifications_snippet.html' %}
 </body>
+
 </html>

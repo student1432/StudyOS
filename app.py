@@ -115,7 +115,15 @@ def calculate_academic_progress(user_data, uid=None):
         syllabus = get_syllabus('after_tenth', 'CBSE', at.get('grade'), at.get('subjects', []))
     
     if not syllabus:
-        return {'overall': 0, 'by_subject': {}, 'total_chapters': 0, 'total_completed': 0}
+        return {
+            'overall': 0, 
+            'by_subject': {}, 
+            'total_chapters': 0, 
+            'total_completed': 0,
+            'momentum': 0,
+            'consistency': 0,
+            'readiness': 0
+        }
         
     by_subject = {}
     total_chapters = 0
@@ -1771,25 +1779,36 @@ def get_notifications():
     """API endpoint for students to fetch their notifications"""
     uid = session['uid']
     user_data = get_user_data(uid)
+    if not user_data:
+        return jsonify({'notifications': []})
+        
     inst_id = user_data.get('institution_id')
-    
     if not inst_id:
         return jsonify({'notifications': []})
     
-    # Get unread notifications
-    notifs_ref = db.collection('institutions').document(inst_id).collection('notifications')\
-        .where('recipient_uid', '==', uid)\
-        .where('read', '==', False)\
-        .order_by('created_at', direction=firestore.Query.DESCENDING)\
-        .limit(10)
-    
-    notifications = []
-    for n in notifs_ref.stream():
-        n_data = n.to_dict()
-        n_data['id'] = n.id
-        notifications.append(n_data)
-    
-    return jsonify({'notifications': notifications})
+    # Get all unread notifications for this user in their institution
+    # We remove order_by to avoid the need for a composite index
+    try:
+        notifs_ref = db.collection('institutions').document(inst_id).collection('notifications')\
+            .where('recipient_uid', '==', uid)\
+            .where('read', '==', False)
+        
+        notifications = []
+        # Calling stream() with a simple query (single field filter or multiple equality filters) 
+        # usually doesn't require a composite index unless combined with order_by or inequalities.
+        for n in notifs_ref.stream():
+            n_data = n.to_dict()
+            n_data['id'] = n.id
+            notifications.append(n_data)
+        
+        # Sort in memory by created_at descending
+        notifications.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        
+        # Limit to 10 for the response
+        return jsonify({'notifications': notifications[:10]})
+    except Exception as e:
+        print(f"Notification error: {e}")
+        return jsonify({'notifications': [], 'error': str(e)})
 
 @app.route('/api/notifications/<notif_id>/mark_read', methods=['POST'])
 @require_login

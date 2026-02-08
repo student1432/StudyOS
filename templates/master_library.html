@@ -200,7 +200,31 @@
 
 <body>
     <div class="dashboard-layout">
-        {% include '_library_sidebar.html' %}
+        <aside class="sidebar library-sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('profile_resume') }}">{{ name }}</a>
+                <div class="sidebar-subtitle">Master Library</div>
+            </div>
+            <nav class="sidebar-nav">
+
+                <a href="#highschool" class="nav-item active" onclick="showLibrarySection('highschool')">
+                    <span class="nav-icon"></span> High School
+                </a>
+                <a href="#exams" class="nav-item" onclick="showLibrarySection('exams')">
+                    <span class="nav-icon"></span> Competitive Exams
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a id="themeToggle" class="nav-item" style="cursor:pointer;">
+                    Toggle theme
+                </a>
+                <a href="{{ url_for('profile_dashboard') }}" class="nav-item">
+                    <span class="nav-icon"></span> Back to Home
+                </a>
+                <a href="{{ url_for('academic_dashboard') }}" class="nav-item">My Academic Path</a>
+                <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
+            </div>
+        </aside>
 
         <main class="main-content">
             <div class="library-container">
@@ -216,7 +240,7 @@
 
                 <div id="highschool" class="library-section active">
                     <div class="filter-pill-container" id="gradeFilters">
-                        <button class="filter-pill active" onclick="filterByGrade('all')">All Grades</button>
+                        <button class="filter-pill" onclick="filterByGrade('all')">All Grades</button>
                         <button class="filter-pill" onclick="filterByGrade('9')">Grade 9</button>
                         <button class="filter-pill" onclick="filterByGrade('10')">Grade 10</button>
                         <button class="filter-pill" onclick="filterByGrade('11')">Grade 11</button>
@@ -432,31 +456,33 @@
             }
         }
 
-            // theme toggle
-            (function () {
-                const root = document.documentElement;
-                const toggle = document.getElementById("themeToggle");
 
-                const savedTheme = localStorage.getItem("studyos-theme");
-                if (savedTheme) {
-                    root.setAttribute("data-theme", savedTheme);
-                }
-
-                if (toggle) {
-                    toggle.addEventListener("click", () => {
-                        const next =
-                            root.getAttribute("data-theme") === "dark"
-                                ? "light"
-                                : "dark";
-
-                        root.setAttribute("data-theme", next);
-                        localStorage.setItem("studyos-theme", next);
-                    });
-                }
-            })();
 
         // Initialize
         initSidebarLinks();
+    </script>
+    <script>
+        (function () {
+            const root = document.documentElement;
+            const toggle = document.getElementById("themeToggle");
+
+            const savedTheme = localStorage.getItem("studyos-theme");
+            if (savedTheme) {
+                root.setAttribute("data-theme", savedTheme);
+            }
+
+            if (toggle) {
+                toggle.addEventListener("click", () => {
+                    const next =
+                        root.getAttribute("data-theme") === "dark"
+                            ? "light"
+                            : "dark";
+
+                    root.setAttribute("data-theme", next);
+                    localStorage.setItem("studyos-theme", next);
+                });
+            }
+        })();
     </script>
 </body>
 
