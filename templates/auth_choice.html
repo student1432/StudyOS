@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sclera | Choose Your Identity</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "os-bg": "#ffffff",
+                        "os-surface": "#fafafa",
+                        "os-accent": "#000000",
+                        "os-grey": "#f2f2f2",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"],
+                        "serif": ["Newsreader", "serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply font-sans bg-os-bg text-os-accent selection:bg-black selection:text-white overflow-x-hidden antialiased;
+            }
+        }
+        .section-spacing {
+            @apply py-[120px];
+        }
+        .glass-card {
+            @apply backdrop-blur-2xl bg-white/30 border border-white/80 shadow-[0_20px_50px_rgba(0,0,0,0.02)] transition-all duration-700;
+        }
+        .glass-card:hover {
+            @apply bg-white/60 shadow-[0_30px_60px_rgba(0,0,0,0.04)] -translate-y-2;
+        }
+        .btn-premium {
+            @apply relative overflow-hidden px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 ease-out;
+        }
+        .system-orb {
+            position: fixed;
+            top: -10%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,240,240,0.3) 50%, rgba(220,220,220,0.1) 100%);
+            backdrop-filter: blur(60px);
+            border: 1px solid rgba(255,255,255,1);
+            box-shadow: 0 40px 100px rgba(0,0,0,0.03);
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<div class="system-orb"></div>
+
+<nav class="fixed top-0 w-full z-50 px-12 py-8 flex justify-between items-center bg-white/10 backdrop-blur-xl border-b border-black/[0.03]">
+<a href="{{ url_for('index') }}" class="flex items-center gap-4 group">
+<div class="w-3 h-3 bg-black rounded-full group-hover:scale-125 transition-transform"></div>
+<span class="text-[14px] font-bold tracking-[0.5em] uppercase">SCLERA</span>
+</a>
+<div class="flex items-center gap-8">
+<span class="text-[9px] font-bold uppercase tracking-[0.3em] text-black/20">Identity Portal</span>
+<a href="{{ url_for('index') }}" class="w-12 h-12 rounded-full border border-black/5 flex items-center justify-center hover:bg-black hover:text-white transition-all">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</a>
+</div>
+</nav>
+
+<main class="relative z-10 flex-grow flex flex-col justify-center items-center px-12 section-spacing">
+<div class="max-w-6xl w-full">
+<div class="text-center mb-20">
+<span class="inline-block px-5 py-2 rounded-full bg-black/5 text-[10px] font-bold uppercase tracking-[0.3em] text-black/60 mb-8">
+                Authentication Layer
+            </span>
+<h1 class="font-serif text-6xl italic font-light mb-6">Choose Your Role.</h1>
+<p class="text-xl text-black/40 font-light max-w-xl mx-auto">Select your identity to access your personalized academic environment.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+<!-- Student Card -->
+<div class="glass-card p-12 rounded-[3rem] text-center flex flex-col items-center">
+<div class="w-20 h-20 rounded-full bg-black/5 flex items-center justify-center mb-10">
+<span class="material-symbols-outlined text-4xl">person</span>
+</div>
+<h2 class="font-serif text-3xl mb-4">Student</h2>
+<p class="text-sm text-black/40 mb-12 font-light leading-relaxed">Access your syllabus, track progress, and execute your study goals.</p>
+<div class="flex flex-col gap-4 w-full mt-auto">
+<a href="{{ url_for('login') }}" class="btn-premium bg-black text-white hover:shadow-lg">Login as Student</a>
+<a href="{{ url_for('signup') }}" class="btn-premium border border-black/10 hover:bg-black/5">Sign Up as Student</a>
+</div>
+</div>
+
+<!-- Teacher Card -->
+<div class="glass-card p-12 rounded-[3rem] text-center flex flex-col items-center">
+<div class="w-20 h-20 rounded-full bg-black/5 flex items-center justify-center mb-10">
+<span class="material-symbols-outlined text-4xl">school</span>
+</div>
+<h2 class="font-serif text-3xl mb-4">Teacher</h2>
+<p class="text-sm text-black/40 mb-12 font-light leading-relaxed">Manage your classes, broadcast messages, and monitor student performance.</p>
+<div class="flex flex-col gap-4 w-full mt-auto">
+<a href="{{ url_for('login_teacher') }}" class="btn-premium bg-black text-white hover:shadow-lg">Login as Teacher</a>
+<a href="{{ url_for('signup_teacher') }}" class="btn-premium border border-black/10 hover:bg-black/5">Sign Up as Teacher</a>
+</div>
+</div>
+
+<!-- Institution Admin Card -->
+<div class="glass-card p-12 rounded-[3rem] text-center flex flex-col items-center">
+<div class="w-20 h-20 rounded-full bg-black/5 flex items-center justify-center mb-10">
+<span class="material-symbols-outlined text-4xl">domain</span>
+</div>
+<h2 class="font-serif text-3xl mb-4">Admin</h2>
+<p class="text-sm text-black/40 mb-12 font-light leading-relaxed">Oversee your institution, manage staff, and analyze behavioral heatmaps.</p>
+<div class="flex flex-col gap-4 w-full mt-auto">
+<a href="{{ url_for('login_admin') }}" class="btn-premium bg-black text-white hover:shadow-lg">Login as Admin</a>
+<a href="{{ url_for('signup_admin') }}" class="btn-premium border border-black/10 hover:bg-black/5">Sign Up as Admin</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+<footer class="py-12 px-12 border-t border-black/[0.03] text-center">
+<span class="text-[10px] uppercase tracking-[0.5em] text-black/20 italic font-serif">
+            Integrated Identity Management / v2.1.0
+        </span>
+</footer>
+</body></html>

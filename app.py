@@ -486,7 +486,11 @@ def get_internship_by_id(internship_id):
 def index():
     if 'uid' in session:
         return redirect(url_for('profile_dashboard'))
-    return redirect(url_for('signup'))
+    return render_template('landing.html')
+
+@app.route('/auth-choice')
+def auth_choice():
+    return render_template('auth_choice.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 @limiter.limit(config[env].RATE_LIMIT_SIGNUP)

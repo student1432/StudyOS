@@ -347,11 +347,26 @@ def client(app):
 class TestFlaskRoutes:
     """Test suite for Flask routes"""
     
-    def test_index_redirect(self, client):
-        """Test index redirects to signup when not logged in"""
+    def test_index_loads(self, client):
+        """Test index loads landing page when not logged in"""
+        response = client.get('/')
+        assert response.status_code == 200
+        assert b'SCLERA' in response.data
+
+    def test_index_redirects_when_logged_in(self, client):
+        """Test index redirects to dashboard when logged in"""
+        with client.session_transaction() as sess:
+            sess['uid'] = 'test-uid'
+            sess['account_type'] = 'student'
         response = client.get('/')
         assert response.status_code == 302
-        assert '/signup' in response.location
+        assert '/dashboard' in response.location
+
+    def test_auth_choice_page_loads(self, client):
+        """Test auth choice page loads correctly"""
+        response = client.get('/auth-choice')
+        assert response.status_code == 200
+        assert b'Choose Your Role' in response.data
     
     def test_signup_page_loads(self, client):
         """Test signup page loads correctly"""

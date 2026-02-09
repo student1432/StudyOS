@@ -1,2 +1,7 @@
 __pycache__/
 serviceAccountKey.json
+app.log
+cache/
+*.db
+*.db-shm
+*.db-wal
