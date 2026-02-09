@@ -49,13 +49,17 @@ Talisman(app,
     force_https=config[env].SESSION_COOKIE_SECURE,
     strict_transport_security=True,
     strict_transport_security_max_age=31536000,
+    strict_transport_security_include_subdomains=True,
     content_security_policy={
         'default-src': "'self'",
-        'script-src': ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
-        'style-src': ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"],
+        'script-src': ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+        'style-src': ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+        'font-src': ["https://fonts.googleapis.com", "https://fonts.gstatic.com"],
         'img-src': ["'self'", "data:", "https:"],
-        'font-src': ["'self'", "https://cdnjs.cloudflare.com"],
         'connect-src': "'self'",
+        'frame-ancestors': "'none'",
+        'base-uri': "'self'",
+        'form-action': "'self'"
     },
     referrer_policy='strict-origin-when-cross-origin'
 )
@@ -301,14 +305,19 @@ def calculate_academic_progress(user_data, uid=None):
     all_exclusions.update(class_exclusions)
     all_exclusions.update(personal_exclusions)
     syllabus = {}
-    if purpose == 'highschool' and user_data.get('highschool'):
+    syllabus_purpose = {
+        'high_school': 'highschool',
+        'exam_prep': 'exam',
+        'after_tenth': 'after_tenth'
+    }.get(purpose, purpose)
+    if purpose == 'high_school' and user_data.get('highschool'):
         hs = user_data['highschool']
-        syllabus = get_syllabus('highschool', hs.get('board'), hs.get('grade'))
-    elif purpose == 'exam' and user_data.get('exam'):
-        syllabus = get_syllabus('exam', user_data['exam'].get('type'))
+        syllabus = get_syllabus(syllabus_purpose, hs.get('board'), hs.get('grade'))
+    elif purpose == 'exam_prep' and user_data.get('exam'):
+        syllabus = get_syllabus(syllabus_purpose, user_data['exam'].get('type'))
     elif purpose == 'after_tenth' and user_data.get('after_tenth'):
         at = user_data['after_tenth']
-        syllabus = get_syllabus('after_tenth', 'CBSE', at.get('grade'), at.get('subjects', []))
+        syllabus = get_syllabus(syllabus_purpose, 'CBSE', at.get('grade'), at.get('subjects', []))
     if not syllabus:
         return {
             'overall': 0,
@@ -486,7 +495,11 @@ def get_internship_by_id(internship_id):
 def index():
     if 'uid' in session:
         return redirect(url_for('profile_dashboard'))
-    return redirect(url_for('signup'))
+    return redirect(url_for('landing'))
+
+@app.route('/landing')
+def landing():
+    return render_template('landing.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 @limiter.limit(config[env].RATE_LIMIT_SIGNUP)
@@ -538,9 +551,9 @@ def signup():
             db.collection('users').document(uid).set(user_data)
             session['uid'] = uid
             logger.security_event("user_registered", user_id=uid, ip_address=request.remote_addr)
-            if purpose == 'highschool':
+            if purpose == 'high_school':
                 return redirect(url_for('setup_highschool'))
-            elif purpose == 'exam':
+            elif purpose == 'exam_prep':
                 return redirect(url_for('setup_exam'))
             elif purpose == 'after_tenth':
                 return redirect(url_for('setup_after_tenth'))
@@ -683,7 +696,7 @@ def login_student():
 def logout():
     session.clear()
     flash('Logged out successfully', 'success')
-    return redirect('/login')
+    return redirect(url_for('landing'))
 
 @app.route('/student/join/class', methods=['GET', 'POST'])
 @require_login
@@ -1318,15 +1331,20 @@ def academic_dashboard():
         flash('User data not found', 'error')
         return redirect(url_for('logout'))
     purpose = user_data.get('purpose')
+    syllabus_purpose = {
+        'high_school': 'highschool',
+        'exam_prep': 'exam',
+        'after_tenth': 'after_tenth'
+    }.get(purpose, purpose)
     syllabus = {}
-    if purpose == 'highschool' and user_data.get('highschool'):
+    if purpose == 'high_school' and user_data.get('highschool'):
         hs = user_data['highschool']
-        syllabus = get_syllabus('highschool', hs.get('board'), hs.get('grade'))
-    elif purpose == 'exam' and user_data.get('exam'):
-        syllabus = get_syllabus('exam', user_data['exam'].get('type'))
+        syllabus = get_syllabus(syllabus_purpose, hs.get('board'), hs.get('grade'))
+    elif purpose == 'exam_prep' and user_data.get('exam'):
+        syllabus = get_syllabus(syllabus_purpose, user_data['exam'].get('type'))
     elif purpose == 'after_tenth' and user_data.get('after_tenth'):
         at = user_data['after_tenth']
-        syllabus = get_syllabus('after_tenth', 'CBSE', at.get('grade'), at.get('subjects', []))
+        syllabus = get_syllabus(syllabus_purpose, 'CBSE', at.get('grade'), at.get('subjects', []))
     progress_data = calculate_academic_progress(user_data)
     chapters_completed = user_data.get('chapters_completed', {})
     # Merge institution and class exclusions for UI consistency
@@ -1412,15 +1430,20 @@ def chapter_detail(subject_name, chapter_name):
         flash('User data not found', 'error')
         return redirect(url_for('logout'))
     purpose = user_data.get('purpose')
+    syllabus_purpose = {
+        'high_school': 'highschool',
+        'exam_prep': 'exam',
+        'after_tenth': 'after_tenth'
+    }.get(purpose, purpose)
     syllabus = {}
-    if purpose == 'highschool' and user_data.get('highschool'):
+    if purpose == 'high_school' and user_data.get('highschool'):
         hs = user_data['highschool']
-        syllabus = get_syllabus('highschool', hs.get('board'), hs.get('grade'))
-    elif purpose == 'exam' and user_data.get('exam'):
-        syllabus = get_syllabus('exam', user_data['exam'].get('type'))
+        syllabus = get_syllabus(syllabus_purpose, hs.get('board'), hs.get('grade'))
+    elif purpose == 'exam_prep' and user_data.get('exam'):
+        syllabus = get_syllabus(syllabus_purpose, user_data['exam'].get('type'))
     elif purpose == 'after_tenth' and user_data.get('after_tenth'):
         at = user_data['after_tenth']
-        syllabus = get_syllabus('after_tenth', 'CBSE', at.get('grade'), at.get('subjects', []))
+        syllabus = get_syllabus(syllabus_purpose, 'CBSE', at.get('grade'), at.get('subjects', []))
     subject_data = syllabus.get(subject_name, {})
     if not subject_data:
         flash('Subject not found', 'error')
@@ -1987,15 +2010,16 @@ def settings():
                 'after_tenth': None,
             }
             # Set new academic data based on purpose
-            if new_purpose == 'highschool':
+            if new_purpose == 'high_school':
                 updates['highschool'] = {'board': new_board, 'grade': new_grade}
-            elif new_purpose == 'exam':
+            elif new_purpose == 'exam_prep':
                 exam_type = request.form.get('exam_type', 'JEE')
                 updates['exam'] = {'type': exam_type}
             elif new_purpose == 'after_tenth':
                 stream = request.form.get('stream', 'Science')
+                grade = request.form.get('grade_after')
                 updates['after_tenth'] = {
-                    'grade': new_grade,
+                    'grade': grade,
                     'stream': stream,
                     'subjects': []
                 }
@@ -2271,9 +2295,14 @@ def manage_class_syllabus(class_id):
     exclusions = exclusions_doc.to_dict().get('chapters', {}) if exclusions_doc.exists else {}
     # Get syllabus based on class metadata
     purpose = class_data.get('purpose', 'highschool')
+    syllabus_purpose = {
+        'high_school': 'highschool',
+        'exam_prep': 'exam',
+        'after_tenth': 'after_tenth'
+    }.get(purpose, purpose)
     board = class_data.get('board', 'CBSE')
     grade = class_data.get('grade', '10')
-    syllabus = get_syllabus(purpose, board, grade)
+    syllabus = get_syllabus(syllabus_purpose, board, grade)
     if not syllabus:
         syllabus = {} # Fallback to empty if not found
     context = {
@@ -2361,6 +2390,7 @@ def all_students():
     context = {
         'profile': profile,
         'students': students_list,
+        'total_students': len(students_list),
     }
     return render_template('all_students.html', **context)
 
@@ -2381,6 +2411,17 @@ def institution_teacher_settings():
     # Get teacher's classes
     classes_docs = db.collection('classes').where('teacher_id', '==', uid).stream()
     classes = [{'id': c.id, **c.to_dict()} for c in classes_docs]
+
+    # Get all students in institution
+    students_docs = db.collection('users').where('institution_id', '==', inst_id).stream()
+    students = [{'id': s.id, **s.to_dict()} for s in students_docs]
+
+    logger.info("fetched_students", count=len(students), institution_id=inst_id)
+
+    # Populate students for each class
+    for cls in classes:
+        cls['students'] = [s['id'] for s in students if cls['id'] in s.get('class_ids', [])]
+        logger.info("class_student_count", class_name=cls.get('name', cls['id']), class_id=cls['id'], student_count=len(cls['students']))
 
     context = {
         'profile': profile,
@@ -2409,6 +2450,17 @@ def institution_admin_settings():
     # Get all classes in institution
     classes_docs = db.collection('classes').where('institution_id', '==', inst_id).stream()
     classes = [{'id': c.id, **c.to_dict()} for c in classes_docs]
+
+    # Get all students in institution
+    students_docs = db.collection('users').where('institution_id', '==', inst_id).stream()
+    students = [{'id': s.id, **s.to_dict()} for s in students_docs]
+
+    logger.info("fetched_students", count=len(students), institution_id=inst_id)
+
+    # Populate students for each class
+    for cls in classes:
+        cls['students'] = [s['id'] for s in students if cls['id'] in s.get('class_ids', [])]
+        logger.info("class_student_count", class_name=cls.get('name', cls['id']), class_id=cls['id'], student_count=len(cls['students']))
 
     context = {
         'profile': profile,

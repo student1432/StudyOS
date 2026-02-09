@@ -16,10 +16,11 @@
         {% endif %}
 
         <main class="main-content">
-            <div class="header-row">
-                <h1>All Students ({{ total_students }})</h1>
-                <a href="{{ url_for('institution_join') }}" class="btn-primary">+ Add Student</a>
-            </div>
+            <span class="header-row">
+                <h1>All Students ({{ total_students }})
+                <a href="{{ url_for('institution_join') }}" class="btn-secondary" style="margin-left: 35em; font-size: 18px;">+ Add Student</a>
+                </h1>
+            </span>
 
             <div class="students-table-container">
                 <table class="students-table">

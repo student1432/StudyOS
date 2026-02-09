@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Sign Up - StudyOS</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-card">
+            <h1>Create Admin Account</h1>
+            <p class="text-muted" style="margin-top:-8px;">Create an institution and admin profile automatically</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('signup_admin') }}">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="text" id="phone" name="phone" placeholder="Optional">
+                </div>
+
+                <div class="form-group">
+                    <label for="institution_name">Institution Name</label>
+                    <input type="text" id="institution_name" name="institution_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create Institution</button>
+            </form>
+
+            <p class="link-text">Already an admin? <a href="{{ url_for('login_admin') }}">Login here</a></p>
+            <p class="link-text">Teacher? <a href="{{ url_for('login_teacher') }}">Teacher login</a></p>
+            <p class="link-text">Student? <a href="{{ url_for('login') }}">Student login</a></p>
+        </div>
+    </div>
+</body>
+</html>

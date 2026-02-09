@@ -1,15 +1,145 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Student Platform</title>
+    <title>Sign Up - StudyOS</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "os-bg": "#ffffff",
+                        "os-surface": "#fafafa",
+                        "os-accent": "#000000",
+                        "os-grey": "#f2f2f2",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"],
+                        "serif": ["Newsreader", "serif"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        /* ===== CUSTOMIZATION GUIDE ===== */
+        /* Primary Colors: Change these to rebrand */
+        :root {
+            --primary-gradient-start: #6b7280; /* Slate grey */
+            --primary-gradient-end: #374151; /* Dark slate */
+            --accent-color: #008A00; /* Vibrant Emerald */
+            --accent-dark: #06402B; /* Deep Forest */
+        }
+
+        /* Light Theme Colors */
+        html[data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafafa;
+            --text-primary: #000000;
+            --text-secondary: rgba(0, 0, 0, 0.7);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --accent-primary: #008A00;
+        }
+
+        /* Dark Theme Colors */
+        html[data-theme="dark"] {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-primary: #06402B;
+        }
+        /* ===== END THEME VARIABLES ===== */
+
+        @layer base {
+            html[data-theme="light"] {
+                --bg-primary: #ffffff;
+                --bg-secondary: #fafafa;
+                --text-primary: #000000;
+                --text-secondary: rgba(0, 0, 0, 0.7);
+                --border-color: rgba(0, 0, 0, 0.1);
+                --accent-primary: #008A00;
+            }
+            
+            html[data-theme="dark"] {
+                --bg-primary: #0a0a0a;
+                --bg-secondary: #1a1a1a;
+                --text-primary: #ffffff;
+                --text-secondary: rgba(255, 255, 255, 0.7);
+                --border-color: rgba(255, 255, 255, 0.1);
+                --accent-primary: #06402B;
+            }
+            
+            body {
+                font-family: Inter, sans-serif;
+                background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+                color: var(--text-primary);
+                overflow-x: hidden;
+                -webkit-font-smoothing: antialiased;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem;
+            }
+        }
+        
+        .glass-card {
+            backdrop-filter: blur(40px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            transition: all 1000ms;
+        }
+        html[data-theme="dark"] .glass-card {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(255, 255, 255, 0.05);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+        }
+        .btn-premium {
+            @apply relative overflow-hidden px-12 py-6 rounded-full text-[11px] font-bold uppercase tracking-[0.3em] transition-all duration-500 ease-out;
+        }
+        html[data-theme="dark"] .btn-premium {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
+            color: white;
+        }
+        html[data-theme="dark"] .btn-premium:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--border-color);
+        }
+        
+        /* Theme-aware text colors */
+        .theme-text-primary { color: var(--text-primary); }
+        .theme-text-secondary { color: var(--text-secondary); }
+    </style>
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="form-card">
-            <h1>Create Account</h1>
+<div id="grainient-container" style="width: 100%; height: 100vh; position: fixed; top: 0; left: 0; z-index: -1;"></div>
+<div class="fallback-gradient fixed inset-0 -z-20" id="fallback-bg"></div>
+<div class="gradient-bg fixed inset-0 opacity-10"></div>
+<div class="min-h-screen flex items-center justify-center px-12 py-12">
+<div class="glass-card rounded-[3rem] p-16 max-w-lg w-full relative">
+<div class="absolute top-8 right-8">
+<button class="w-10 h-10 rounded-full border border-black/5 flex items-center justify-center hover:bg-black hover:text-white transition-all group" id="themeToggle">
+<span class="material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform duration-500">light_mode</span>
+</button>
+</div>
+<div class="text-center mb-12">
+<h1 class="font-serif text-4xl mb-4">Create Account</h1>
+<p class="theme-text-secondary">Join StudyOS and start your academic journey</p>
+</div>
             
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -19,44 +149,350 @@
                 {% endif %}
             {% endwith %}
             
-            <form method="POST" action="{{ url_for('signup') }}">
-                <div class="form-group">
-                    <label for="name">Full Name</label>
-                    <input type="text" id="name" name="name" required>
+            <form method="POST" action="{{ url_for('signup') }}" class="space-y-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium mb-2">Full Name</label>
+                    <input type="text" id="name" name="name" required 
+                           class="w-full px-4 py-3 rounded-lg border border-black/10 bg-white/50 backdrop-blur focus:outline-none focus:ring-2 focus:ring-black/20">
                 </div>
                 
-                <div class="form-group">
-                    <label for="age">Age</label>
-                    <input type="number" id="age" name="age" min="10" max="100" required>
+                <div>
+                    <label for="age" class="block text-sm font-medium mb-2">Age</label>
+                    <input type="number" id="age" name="age" min="10" max="100" required 
+                           class="w-full px-4 py-3 rounded-lg border border-black/10 bg-white/50 backdrop-blur focus:outline-none focus:ring-2 focus:ring-black/20">
                 </div>
                 
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+                <div>
+                    <label for="email" class="block text-sm font-medium mb-2">Email</label>
+                    <input type="email" id="email" name="email" required 
+                           class="w-full px-4 py-3 rounded-lg border border-black/10 bg-white/50 backdrop-blur focus:outline-none focus:ring-2 focus:ring-black/20">
                 </div>
                 
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" minlength="6" required>
+                <div>
+                    <label for="password" class="block text-sm font-medium mb-2">Password</label>
+                    <input type="password" id="password" name="password" minlength="6" required 
+                           class="w-full px-4 py-3 rounded-lg border border-black/10 bg-white/50 backdrop-blur focus:outline-none focus:ring-2 focus:ring-black/20">
                 </div>
                 
-                <div class="form-group">
-                    <label for="purpose">I am a student:</label>
-                    <select id="purpose" name="purpose" required>
+                <div>
+                    <label for="purpose" class="block text-sm font-medium mb-2">I am a student:</label>
+                    <select id="purpose" name="purpose" required 
+                           class="w-full px-4 py-3 rounded-lg border border-black/10 bg-white/50 backdrop-blur focus:outline-none focus:ring-2 focus:ring-black/20">
                         <option value="">Select your purpose</option>
-                        <option value="highschool">Currently in High School</option>
-                        <option value="exam">Preparing for Competitive Exam</option>
+                        <option value="high_school">Currently in High School</option>
+                        <option value="exam_prep">Preparing for Competitive Exam</option>
                         <option value="after_tenth">After 10th Grade</option>
                     </select>
                 </div>
                 
-                <button type="submit" class="btn btn-primary">Sign Up</button>
+                <button type="submit" class="btn-premium bg-black text-white w-full hover:shadow-2xl hover:scale-105">
+Create Account
+</button>
             </form>
             
-            <p class="link-text">Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
-            <p class="link-text">Admin? <a href="{{ url_for('signup_admin') }}">Admin signup</a></p>
-            <p class="link-text">Teacher? <a href="{{ url_for('signup_teacher') }}">Teacher signup</a></p>
-        </div>
-    </div>
+            <p class="text-center mt-8 theme-text-secondary">
+Already have an account? 
+<a href="{{ url_for('login') }}" class="text-black hover:underline font-medium">Sign in here</a>
+</p>
+<div class="text-center mt-6 space-y-4">
+<a href="{{ url_for('landing') }}" class="theme-text-secondary hover:text-black text-sm block">← Back to landing</a>
+<p class="theme-text-secondary">
+Admin? <a href="{{ url_for('signup_admin') }}" class="text-black hover:underline font-medium">Admin signup</a>
+</p>
+<p class="theme-text-secondary">
+Teacher? <a href="{{ url_for('signup_teacher') }}" class="text-black hover:underline font-medium">Teacher signup</a>
+</p>
+</div>
+</div>
+</div>
+<script>
+        // Grainient Background Effect - Same as landing page
+        const hexToRgb = hex => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            if (!result) return [1, 1, 1];
+            return [parseInt(result[1], 16) / 255, parseInt(result[2], 16) / 255, parseInt(result[3], 16) / 255];
+        };
+
+        const vertexShaderSource = `
+            attribute vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+
+        const fragmentShaderSource = `
+            precision highp float;
+            uniform vec2 u_resolution;
+            uniform float u_time;
+            uniform float u_timeSpeed;
+            uniform float u_colorBalance;
+            uniform float u_warpStrength;
+            uniform float u_warpFrequency;
+            uniform float u_warpSpeed;
+            uniform float u_warpAmplitude;
+            uniform float u_blendAngle;
+            uniform float u_blendSoftness;
+            uniform float u_rotationAmount;
+            uniform float u_noiseScale;
+            uniform float u_grainAmount;
+            uniform float u_grainScale;
+            uniform float u_grainAnimated;
+            uniform float u_contrast;
+            uniform float u_gamma;
+            uniform float u_saturation;
+            uniform vec2 u_centerOffset;
+            uniform float u_zoom;
+            uniform vec3 u_color1;
+            uniform vec3 u_color2;
+            uniform vec3 u_color3;
+            
+            #define S(a,b,t) smoothstep(a,b,t)
+            
+            mat2 Rot(float a){
+                float s=sin(a),c=cos(a);
+                return mat2(c,-s,s,c);
+            } 
+            
+            vec2 hash(vec2 p){
+                p=vec2(dot(p,vec2(2127.1,81.17)),dot(p,vec2(1269.5,283.37)));
+                return fract(sin(p)*43758.5453);
+            } 
+            
+            float noise(vec2 p){
+                vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);
+                float n=mix(
+                    mix(dot(-1.0+2.0*hash(i+vec2(0.0,0.0)),f-vec2(0.0,0.0)),
+                        dot(-1.0+2.0*hash(i+vec2(1.0,0.0)),f-vec2(1.0,0.0)),u.x),
+                    mix(dot(-1.0+2.0*hash(i+vec2(0.0,1.0)),f-vec2(0.0,1.0)),
+                        dot(-1.0+2.0*hash(i+vec2(1.0,1.0)),f-vec2(1.0,1.0)),u.x),u.y);
+                return 0.5+0.5*n;
+            }
+            
+            void main() {
+                float t = u_time * u_timeSpeed;
+                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+                float ratio = u_resolution.x / u_resolution.y;
+                vec2 tuv = uv - 0.5 + u_centerOffset;
+                tuv /= max(u_zoom, 0.001);
+
+                float degree = noise(vec2(t * 0.1, tuv.x * tuv.y) * u_noiseScale);
+                tuv.y *= 1.0 / ratio;
+                tuv *= Rot(radians((degree - 0.5) * u_rotationAmount + 180.0));
+                tuv.y *= ratio;
+
+                float frequency = u_warpFrequency;
+                float ws = max(u_warpStrength, 0.001);
+                float amplitude = u_warpAmplitude / ws;
+                float warpTime = t * u_warpSpeed;
+                tuv.x += sin(tuv.y * frequency + warpTime) / amplitude;
+                tuv.y += sin(tuv.x * (frequency * 1.5) + warpTime) / (amplitude * 0.5);
+
+                vec3 colLav = u_color1;
+                vec3 colOrg = u_color2;
+                vec3 colDark = u_color3;
+                float b = u_colorBalance;
+                float s = max(u_blendSoftness, 0.0);
+                mat2 blendRot = Rot(radians(u_blendAngle));
+                float blendX = (tuv * blendRot).x;
+                float edge0 = -0.3 - b - s;
+                float edge1 = 0.2 - b + s;
+                float v0 = 0.5 - b + s;
+                float v1 = -0.3 - b - s;
+                vec3 layer1 = mix(colDark, colOrg, S(edge0, edge1, blendX));
+                vec3 layer2 = mix(colOrg, colLav, S(edge0, edge1, blendX));
+                vec3 col = mix(layer1, layer2, S(v0, v1, tuv.y));
+
+                vec2 grainUv = uv * max(u_grainScale, 0.001);
+                if(u_grainAnimated > 0.5){
+                    grainUv += vec2(u_time * 0.05);
+                } 
+                float grain = fract(sin(dot(grainUv, vec2(12.9898, 78.233))) * 43758.5453);
+                col += (grain - 0.5) * u_grainAmount;
+
+                col = (col - 0.5) * u_contrast + 0.5;
+                float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
+                col = mix(vec3(luma), col, u_saturation);
+                col = pow(max(col, 0.0), vec3(1.0 / max(u_gamma, 0.001)));
+                col = clamp(col, 0.0, 1.0);
+
+                gl_FragColor = vec4(col, 1.0);
+            }
+        `;
+
+        function initGrainient() {
+            console.log('Initializing Grainient with Vanilla WebGL...');
+            const container = document.getElementById('grainient-container');
+            if (!container) {
+                console.error('Grainient container not found');
+                return;
+            }
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.display = 'block';
+                container.appendChild(canvas);
+
+                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                if (!gl) {
+                    throw new Error('WebGL not supported');
+                }
+
+                // Create shaders
+                const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+                gl.shaderSource(vertexShader, vertexShaderSource);
+                gl.compileShader(vertexShader);
+
+                const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+                gl.shaderSource(fragmentShader, fragmentShaderSource);
+                gl.compileShader(fragmentShader);
+
+                // Create program
+                const program = gl.createProgram();
+                gl.attachShader(program, vertexShader);
+                gl.attachShader(program, fragmentShader);
+                gl.linkProgram(program);
+
+                if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                    throw new Error('Failed to link shader program');
+                }
+
+                // Set up geometry (full screen triangle)
+                const positions = new Float32Array([
+                    -1, -1,
+                     3, -1,
+                    -1, 3
+                ]);
+
+                const positionBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+                // Get attribute and uniform locations
+                const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
+                const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
+                const timeUniformLocation = gl.getUniformLocation(program, 'u_time');
+
+                // Set uniforms
+                const setUniforms = () => {
+                    gl.useProgram(program);
+                    gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+                    gl.uniform1f(timeUniformLocation, performance.now() * 0.001);
+                    
+                    // Get current theme
+                    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    
+                    // Set theme-specific colors
+                    let color1, color2, color3;
+                    if (currentTheme === 'dark') {
+                        color1 = hexToRgb('#1e293b');  // Dark blue
+                        color2 = hexToRgb('#334155');  // Medium blue
+                        color3 = hexToRgb('#475569');  // Lighter blue
+                    } else {
+                        color1 = hexToRgb('#ffffff');  // Pure white
+                        color2 = hexToRgb('#d1d5db');  // Medium grey
+                        color3 = hexToRgb('#94a3b8');  // Darker grey for contrast
+                    }
+                    
+                    // Set all your parameters
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_timeSpeed'), 0.5);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_colorBalance'), 0.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_warpStrength'), 1.5);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_warpFrequency'), 3.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_warpSpeed'), 3.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_warpAmplitude'), 30.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_blendAngle'), 0.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_blendSoftness'), 0.05);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_rotationAmount'), 300.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_noiseScale'), 1.5);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_grainAmount'), 0.15);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_grainScale'), 3.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_grainAnimated'), 0.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_contrast'), 1.8);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_gamma'), 1.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_saturation'), 1.2);
+                    gl.uniform2f(gl.getUniformLocation(program, 'u_centerOffset'), 0.0, 0.0);
+                    gl.uniform1f(gl.getUniformLocation(program, 'u_zoom'), 0.8);
+                    
+                    gl.uniform3fv(gl.getUniformLocation(program, 'u_color1'), color1);
+                    gl.uniform3fv(gl.getUniformLocation(program, 'u_color2'), color2);
+                    gl.uniform3fv(gl.getUniformLocation(program, 'u_color3'), color3);
+                };
+
+                // Resize function
+                const resize = () => {
+                    canvas.width = container.clientWidth;
+                    canvas.height = container.clientHeight;
+                    gl.viewport(0, 0, canvas.width, canvas.height);
+                };
+
+                // Animation loop
+                const render = () => {
+                    resize();
+                    setUniforms();
+                    
+                    gl.clearColor(0, 0, 0, 1);
+                    gl.clear(gl.COLOR_BUFFER_BIT);
+                    
+                    gl.useProgram(program);
+                    gl.enableVertexAttribArray(positionAttributeLocation);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+                    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+                    
+                    gl.drawArrays(gl.TRIANGLES, 0, 3);
+                    
+                    requestAnimationFrame(render);
+                };
+
+                // Start animation
+                render();
+                console.log('Grainient WebGL animation started successfully!');
+                
+                // Hide fallback background
+                const fallbackBg = document.getElementById('fallback-bg');
+                if (fallbackBg) {
+                    fallbackBg.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Error initializing Grainient WebGL:', error);
+                // Keep fallback background visible if WebGL fails
+            }
+        }
+
+        // Initialize Grainient when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initGrainient);
+        } else {
+            initGrainient();
+        }
+
+        // Theme toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        const body = document.body;
+        const themeIcon = themeToggle.querySelector('span');
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('studyos-theme') || 'light';
+        html.setAttribute('data-theme', savedTheme);
+        body.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('studyos-theme', newTheme);
+            updateThemeIcon(newTheme);
+        });
+
+        function updateThemeIcon(theme) {
+            themeIcon.textContent = theme === 'dark' ? 'dark_mode' : 'light_mode';
+            themeIcon.className = 'material-symbols-outlined text-[20px] group-hover:rotate-90 transition-transform duration-500';
+        }
+    </script>
 </body>
 </html>

@@ -144,10 +144,10 @@
                                 <select name="purpose" id="purpose" required style="width:100%;margin-top:8px;" 
                                     onchange="updateAcademicFields()">
                                     <option value="">Select purpose...</option>
-                                    <option value="highschool" {% if user.get('purpose') == 'highschool' %}selected{% endif %}>
+                                    <option value="high_school" {% if user.get('purpose') == 'high_school' %}selected{% endif %}>
                                         High School
                                     </option>
-                                    <option value="exam" {% if user.get('purpose') == 'exam' %}selected{% endif %}>
+                                    <option value="exam_prep" {% if user.get('purpose') == 'exam_prep' %}selected{% endif %}>
                                         Competitive Exam
                                     </option>
                                     <option value="after_tenth" {% if user.get('purpose') == 'after_tenth' %}selected{% endif %}>
@@ -270,9 +270,9 @@
             });
             
             // Show relevant fields
-            if (purpose === 'highschool') {
+            if (purpose === 'high_school') {
                 document.getElementById('highschool-fields').style.display = 'block';
-            } else if (purpose === 'exam') {
+            } else if (purpose === 'exam_prep') {
                 document.getElementById('exam-fields').style.display = 'block';
             } else if (purpose === 'after_tenth') {
                 document.getElementById('after_tenth-fields').style.display = 'block';

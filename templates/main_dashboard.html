@@ -1,12 +1,89 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home — Student Platform</title>
+    <title>Home — StudyOS</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "os-bg": "#ffffff",
+                        "os-surface": "#fafafa",
+                        "os-accent": "#000000",
+                        "os-grey": "#f2f2f2",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"],
+                        "serif": ["Newsreader", "serif"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        /* ===== CUSTOMIZATION GUIDE ===== */
+        /* Primary Colors: Change these to rebrand */
+        :root {
+            --primary-gradient-start: #6b7280; /* Slate grey */
+            --primary-gradient-end: #374151; /* Dark slate */
+            --accent-color: #008A00; /* Vibrant Emerald */
+            --accent-dark: #06402B; /* Deep Forest */
+        }
+
+        /* Light Theme Colors */
+        html[data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafafa;
+            --text-primary: #000000;
+            --text-secondary: rgba(0, 0, 0, 0.7);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --accent-primary: #008A00;
+        }
+
+        /* Dark Theme Colors */
+        html[data-theme="dark"] {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-primary: #06402B;
+        }
+        /* ===== END THEME VARIABLES ===== */
+
+        @layer base {
+            body {
+                @apply font-sans bg-os-bg text-os-accent selection:bg-black selection:text-white overflow-x-hidden antialiased;
+            }
+        }
+
+        /* Glass morphism effects */
+        .glass-card {
+            backdrop-filter: blur(40px);
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.02);
+            transition: all 1000ms;
+        }
+        html[data-theme="dark"] .glass-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 50px rgba(255, 255, 255, 0.02);
+        }
+
+        /* Theme-aware text colors */
+        .theme-text-primary { color: var(--text-primary); }
+        .theme-text-secondary { color: var(--text-secondary); }
+    </style>
 </head>
 
 <body>
@@ -30,7 +107,7 @@
             <div class="dashboard-top">
 
                 <!-- TOP-LEFT: Academic Island -->
-                <a href="{{ url_for('academic_dashboard') }}" class="island island-academic"
+                <a href="{{ url_for('academic_dashboard') }}" class="glass-card island-academic"
                     style="text-decoration:none;">
                     <h3>Academic</h3>
                     <p>Your syllabus, chapters &amp; study progress</p>
@@ -44,7 +121,7 @@
                 <div class="dashboard-top-right">
 
                     <!-- Profile Island -->
-                    <a href="{{ url_for('profile_resume') }}" class="island" style="text-decoration:none;">
+                    <a href="{{ url_for('profile_resume') }}" class="glass-card" style="text-decoration:none;">
                         <h3>Profile</h3>
                         <div class="island-profile-snapshot">
                             <p><strong>{{ name }}</strong></p>
@@ -54,7 +131,7 @@
                     </a>
 
                     <!-- Career / Interests Island -->
-                    <a href="{{ url_for('interests_dashboard') }}" class="island" style="text-decoration:none;">
+                    <a href="{{ url_for('interests_dashboard') }}" class="glass-card" style="text-decoration:none;">
                         <h3>Careers</h3>
                         <p>Explore paths, courses &amp; internships</p>
                         {% if saved_careers %}
@@ -114,18 +191,21 @@
                 data: {
                     datasets: [{
                         data: [{{ overall_progress }}, {{ 100 - overall_progress }}],
-                backgroundColor: ['#666666', '#27272a'],
-                borderWidth: 0
-            }]
-        },
-            options: {
-            responsive: true,
-                maintainAspectRatio: true,
+                        backgroundColor: ['#666666', '#27272a'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
                     cutout: '68%',
-                        plugins: { legend: { display: false }, tooltip: { enabled: false } }
-        }
-    });
-}) ();
+                    plugins: { 
+                        legend: { display: false }, 
+                        tooltip: { enabled: false } 
+                    }
+                }
+            });
+        })();
     </script>
 
     <script>

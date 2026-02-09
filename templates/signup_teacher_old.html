@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Sign Up - StudyOS</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-card">
+            <h1>Create Teacher Account</h1>
+            <p class="text-muted" style="margin-top:-8px;">You’ll join an institution using a single-use invite code</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('signup_teacher') }}">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="text" id="phone" name="phone" placeholder="Optional">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create Teacher Account</button>
+            </form>
+
+            <p class="link-text">Already a teacher? <a href="{{ url_for('login_teacher') }}">Login here</a></p>
+            <p class="link-text">Admin? <a href="{{ url_for('login_admin') }}">Admin login</a></p>
+            <p class="link-text">Student? <a href="{{ url_for('login') }}">Student login</a></p>
+        </div>
+    </div>
+</body>
+</html>
