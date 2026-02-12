@@ -76,6 +76,18 @@
     --transition-fast: 150ms;
     --transition: 200ms;
     --transition-slow: 300ms;
+
+    /* Community Dashboard Variables */
+    --surface: #1f1f1f;
+    --border: #27272a;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #737373;
+    --primary: #ffffff;
+    --secondary: #27272a;
+    --success: #22c55e;
+    --error: #ef4444;
+    --background: #1a1a1a;
 }
 
 [data-theme="light"] {
@@ -131,6 +143,18 @@
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.12);
     --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+    /* Community Dashboard Variables - Light Mode */
+    --surface: #f8fafc;
+    --border: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --primary: #000000;
+    --secondary: #f1f5f9;
+    --success: #16a34a;
+    --error: #dc2626;
+    --background: #f1f5f9;
 }
 
 /* ============================================================================

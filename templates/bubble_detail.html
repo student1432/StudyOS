@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ bubble.name }} - {{ name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+</head>
+<body>
+    {% include '_sidebar.html' %}
+
+    <main class="main-content">
+        <div class="dashboard-layout">
+            <!-- Grid container for all islands -->
+            <div class="bubble-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                <!-- Bubble Header Island -->
+                <div class="dashboard-top">
+                    <div class="island">
+                        <div class="bubble-title-section" style="margin-bottom: 1.5rem;">
+                            <h1 style="font-size: 2.5rem; font-weight: 600; color: var(--text-primary); margin: 0 0 0.5rem 0;">{{ bubble.name }}</h1>
+                            <p style="font-size: 1.1rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                                {{ bubble.description or 'A collaborative study space for group learning and progress tracking.' }}
+                            </p>
+                        </div>
+
+                        <div class="bubble-stats-row" style="display: flex; gap: 2rem; margin-bottom: 1.5rem;">
+                            <div class="stat-box" style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div class="stat-icon" style="width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <span class="material-symbols-outlined">group</span>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number" style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{ bubble.member_count }}</div>
+                                    <div class="stat-label" style="font-size: 0.9rem; color: var(--text-secondary);">Members</div>
+                                </div>
+                            </div>
+
+                            <div class="stat-box" style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div class="stat-icon" style="width: 40px; height: 40px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <span class="material-symbols-outlined">calendar_today</span>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number" style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">
+                                        {% if bubble.created_at %}
+                                            {{ bubble.created_at[:10] }}
+                                        {% else %}
+                                            Recent
+                                        {% endif %}
+                                    </div>
+                                    <div class="stat-label" style="font-size: 0.9rem; color: var(--text-secondary);">Created</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Creator Actions for Creator -->
+                        {% if bubble.is_creator %}
+                        <div class="creator-actions" style="display: flex; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                            <button class="btn btn-secondary" onclick="inviteMembers()">
+                                <span class="material-symbols-outlined" style="margin-right: 8px;">person_add</span>
+                                Invite Members
+                            </button>
+                            <button class="btn btn-secondary" onclick="manageBubble()">
+                                <span class="material-symbols-outlined" style="margin-right: 8px;">settings</span>
+                                Manage Bubble
+                            </button>
+                            <button class="btn-danger" onclick="deleteBubble()">
+                                <span class="material-symbols-outlined" style="margin-right: 8px;">delete</span>
+                                Delete Bubble
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Privacy Consent Island -->
+                <div class="dashboard-top">
+                    <div class="island">
+                        <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem;">
+                            <span class="material-symbols-outlined" style="margin-right: 8px; vertical-align: middle;">privacy_tip</span>
+                            Leaderboard Participation
+                        </h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5;">
+                            Choose whether to display your academic progress on this bubble's leaderboard. This helps motivate group study and track collective progress, but is completely optional.
+                        </p>
+
+                        <div class="consent-controls" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--background); border-radius: 0.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; flex: 1;">
+                                <input type="checkbox" id="leaderboardConsent" {% if current_user_data %}checked{% endif %} style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                <span style="color: var(--text-primary); font-weight: 500;">Show my progress on this leaderboard</span>
+                            </label>
+                            <button class="btn" onclick="updateConsent()" style="margin-left: 1rem;">
+                                <span class="material-symbols-outlined" style="margin-right: 8px;">save</span>
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User's Rank Island (only if user has data) -->
+                {% if current_user_data %}
+                <div class="dashboard-top">
+                    <div class="island" style="background: linear-gradient(135deg, var(--primary), var(--success)); color: white; position: relative; overflow: hidden; grid-column: span 2;">
+                        <div class="rank-content" style="position: relative; z-index: 2;">
+                            <div class="rank-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                                <div class="rank-badge-large" style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700;">
+                                    #{{ current_user_rank }}
+                                </div>
+                                <div class="rank-info">
+                                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: 600;">Your Ranking</h3>
+                                    <p style="margin: 0; opacity: 0.9;">Among {{ total_participants }} participants</p>
+                                </div>
+                            </div>
+
+                            <div class="user-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem;">
+                                <div class="stat-card" style="background: rgba(255,255,255,0.1); border-radius: 0.75rem; padding: 1rem; text-align: center;">
+                                    <div class="stat-value" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">{{ current_user_data.overall_score }}%</div>
+                                    <div class="stat-label" style="font-size: 0.9rem; opacity: 0.9;">Overall Progress</div>
+                                </div>
+                                <div class="stat-card" style="background: rgba(255,255,255,0.1); border-radius: 0.75rem; padding: 1rem; text-align: center;">
+                                    <div class="stat-value" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">{{ current_user_data.completed_chapters }}/{{ current_user_data.total_chapters }}</div>
+                                    <div class="stat-label" style="font-size: 0.9rem; opacity: 0.9;">Chapters Done</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Background pattern -->
+                        <div style="position: absolute; top: 0; right: 0; width: 200px; height: 200px; opacity: 0.1;">
+                            <span class="material-symbols-outlined" style="font-size: 200px;">workspace_premium</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Leaderboard Island (full width) -->
+                <div class="dashboard-top">
+                    <div class="island" style="grid-column: span 2;">
+                        <div class="leaderboard-header-section" style="margin-bottom: 2rem;">
+                            <h2 style="font-size: 1.75rem; font-weight: 600; color: var(--text-primary); margin: 0 0 0.5rem 0;">
+                                <span class="material-symbols-outlined" style="margin-right: 12px; vertical-align: middle;">leaderboard</span>
+                                Bubble Leaderboard
+                            </h2>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 1rem;">
+                                Top performers in this study group
+                                {% if total_participants > 0 %}
+                                    • {{ total_participants }} participants
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div class="leaderboard-entries">
+                            {% if leaderboard %}
+                                {% for user in leaderboard %}
+                                <div class="leaderboard-row {% if user.is_current_user %}current-user-row{% endif %}" style="display: flex; align-items: center; padding: 1.25rem 0; border-bottom: 1px solid var(--border); transition: background-color 0.2s ease; {% if user.is_current_user %}background: var(--bg-secondary); border-left: 4px solid var(--primary);{% endif %}">
+
+                                    <!-- Rank Column -->
+                                    <div class="rank-col" style="width: 80px; text-align: center;">
+                                        {% if user.rank <= 3 %}
+                                            <div class="top-rank-badge rank-{{ user.rank }}" style="width: 50px; height: 50px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                                {% if user.rank == 1 %}👑{% elif user.rank == 2 %}🥈{% elif user.rank == 3 %}🥉{% else %}{{ user.rank }}{% endif %}
+                                            </div>
+                                        {% else %}
+                                            <div class="rank-number" style="font-size: 1.5rem; font-weight: 700; color: var(--text-secondary);">
+                                                {{ user.rank }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- User Info Column -->
+                                    <div class="user-info-col" style="flex: 1; margin-left: 1rem;">
+                                        <div class="user-display-name" style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                                            {{ user.name }}
+                                            {% if user.is_current_user %}
+                                                <span class="you-badge" style="background: var(--primary); color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-weight: 500;">You</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="user-meta" style="font-size: 0.9rem; color: var(--text-secondary);">
+                                            {{ user.purpose_display }}
+                                            {% if user.grade %} • Grade {{ user.grade }}{% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Progress Column -->
+                                    <div class="progress-col" style="width: 200px; text-align: center;">
+                                        <div class="progress-percentage" style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+                                            {{ user.overall_score }}%
+                                        </div>
+                                        <div class="progress-visual" style="width: 120px; height: 8px; background: var(--bg-tertiary); border-radius: 4px; margin: 0 auto; overflow: hidden; position: relative;">
+                                            <div class="progress-fill-bar" style="height: 100%; background: var(--success); border-radius: 4px; width: {{ user.overall_score }}%; transition: width 0.5s ease;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Chapters Column -->
+                                    <div class="chapters-col" style="width: 150px; text-align: center;">
+                                        <div class="chapters-count" style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">
+                                            {{ user.completed_chapters }}/{{ user.total_chapters }}
+                                        </div>
+                                        <div class="chapters-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                            Chapters
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-leaderboard" style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+                                    <span class="material-symbols-outlined" style="font-size: 4rem; display: block; margin-bottom: 1rem; opacity: 0.5;">leaderboard</span>
+                                    <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary);">No Leaderboard Data Yet</h3>
+                                    <p style="margin: 0; font-size: 1rem;">
+                                        Members need to consent to their progress being displayed on the leaderboard.
+                                        <br>Check back later or update your privacy preferences above.
+                                    </p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Study Tips Island -->
+                <div class="dashboard-top">
+                    <div class="island" style="grid-column: span 2;">
+                        <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="material-symbols-outlined">lightbulb</span>
+                            Study Tips for Group Success
+                        </h3>
+                        <div class="tips-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+                            <div class="tip-card" style="background: var(--bg-tertiary); border-radius: 0.75rem; padding: 1.5rem; border: 1px solid var(--border);">
+                                <div class="tip-icon" style="width: 48px; height: 48px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 1rem;">
+                                    <span class="material-symbols-outlined">groups</span>
+                                </div>
+                                <h4 style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin: 0 0 0.5rem 0;">Collaborate Actively</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">
+                                    Share your progress and encourage others. Group accountability leads to better results.
+                                </p>
+                            </div>
+
+                            <div class="tip-card" style="background: var(--bg-tertiary); border-radius: 0.75rem; padding: 1.5rem; border: 1px solid var(--border);">
+                                <div class="tip-icon" style="width: 48px; height: 48px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 1rem;">
+                                    <span class="material-symbols-outlined">psychology</span>
+                                </div>
+                                <h4 style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin: 0 0 0.5rem 0;">Healthy Competition</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">
+                                    Use rankings as motivation, not pressure. Celebrate everyone's achievements.
+                                </p>
+                            </div>
+
+                            <div class="tip-card" style="background: var(--bg-tertiary); border-radius: 0.75rem; padding: 1.5rem; border: 1px solid var(--border);">
+                                <div class="tip-icon" style="width: 48px; height: 48px; background: var(--info); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 1rem;">
+                                    <span class="material-symbols-outlined">schedule</span>
+                                </div>
+                                <h4 style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin: 0 0 0.5rem 0;">Regular Check-ins</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">
+                                    Set group goals and check progress regularly to stay on track together.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const html = document.documentElement;
+                    const currentTheme = html.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+                    html.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                });
+            }
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            // Set progress bar widths for leaderboard
+            const progressFills = document.querySelectorAll('.progress-fill-bar');
+            progressFills.forEach(fill => {
+                const progress = fill.getAttribute('data-progress');
+                if (progress) {
+                    fill.style.width = progress + '%';
+                }
+            });
+        });
+
+        // Bubble management functions
+        function inviteMembers() {
+            // Show invitation modal - reuse from community dashboard
+            showInvitationModal('{{ bubble.id }}', '{{ bubble.name }}');
+        }
+
+        function manageBubble() {
+            // TODO: Implement bubble management
+            showToast('Bubble management coming soon!', 'info');
+        }
+
+        async function deleteBubble() {
+            if (!confirm('Are you sure you want to delete this bubble? This action cannot be undone and will remove all members.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/bubbles/{{ bubble.id }}/delete`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Bubble deleted successfully!', 'success');
+                    setTimeout(() => window.location.href = '/community', 1000);
+                } else {
+                    showToast(data.error || 'Failed to delete bubble', 'error');
+                }
+            } catch (error) {
+                console.error('Delete bubble error:', error);
+                showToast('Failed to delete bubble', 'error');
+            }
+        }
+
+        async function updateConsent() {
+            const consent = document.getElementById('leaderboardConsent').checked;
+
+            try {
+                const response = await fetch('/api/user/privacy/leaderboard', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        allow_leaderboard: consent
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Privacy preference updated!', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showToast(data.error || 'Failed to update preference', 'error');
+                }
+            } catch (error) {
+                console.error('Update consent error:', error);
+                showToast('Failed to update preference', 'error');
+            }
+        }
+
+        function showInvitationModal(bubbleId, bubbleName) {
+            console.log('Showing invitation modal for bubble:', bubbleId, bubbleName);
+
+            // Create invitation modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+
+            modal.innerHTML = `
+                <div style="background: var(--surface); padding: 2rem; border-radius: 1rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; color: var(--text-primary);">
+                    <h3 style="margin-bottom: 1rem;">Invite Friends to "${bubbleName}"</h3>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+                        Select your connections to invite to join this study bubble. They will receive a notification and can choose to accept or decline.
+                    </p>
+
+                    <div id="connectionsList" style="margin-bottom: 2rem;">
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <span class="material-symbols-outlined" style="font-size: 2rem; display: block; margin-bottom: 1rem;">hourglass_empty</span>
+                            Loading connections...
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button onclick="this.closest('div').parentElement.remove()" style="background: var(--text-muted); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">Skip for Now</button>
+                        <button id="sendInvitationsBtn" style="background: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">Send Invitations</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            console.log('Invitation modal added to DOM');
+
+            // Load connections
+            loadConnectionsForInvitations(bubbleId, bubbleName);
+
+            // Handle send invitations
+            const sendBtn = modal.querySelector('#sendInvitationsBtn');
+            sendBtn.addEventListener('click', () => sendInvitations(bubbleId, bubbleName, modal));
+        }
+
+        async function loadConnectionsForInvitations(bubbleId, bubbleName) {
+            try {
+                const response = await fetch('/api/connections');
+                const data = await response.json();
+
+                if (data.accepted && data.accepted.length > 0) {
+                    const connectionsList = document.getElementById('connectionsList');
+                    connectionsList.innerHTML = `
+                        <div style="margin-bottom: 1rem; font-weight: 500; color: var(--text-primary);">Select connections to invite:</div>
+                        ${data.accepted.map(conn => `
+                            <label style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: var(--background); border-radius: 0.5rem; margin-bottom: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" value="${conn.uid}" style="margin: 0;">
+                                <div class="avatar" style="width: 2.5rem; height: 2.5rem; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500; flex-shrink: 0;">
+                                    ${conn.name[0].toUpperCase()}
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 500; color: var(--text-primary);">${conn.name}</div>
+                                    <div style="font-size: 0.875rem; color: var(--text-secondary);">${conn.purpose_display}</div>
+                                </div>
+                            </label>
+                        `).join('')}
+                    `;
+                } else {
+                    document.getElementById('connectionsList').innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <span class="material-symbols-outlined" style="font-size: 2rem; display: block; margin-bottom: 1rem;">people</span>
+                            <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">No connections yet</div>
+                            <div style="font-size: 0.875rem;">Connect with friends first, then you can invite them to your bubbles!</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Load connections error:', error);
+                document.getElementById('connectionsList').innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <span class="material-symbols-outlined" style="font-size: 2rem; display: block; margin-bottom: 1rem;">error</span>
+                        Failed to load connections
+                    </div>
+                `;
+            }
+        }
+
+        async function sendInvitations(bubbleId, bubbleName, modal) {
+            const selectedConnections = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            if (selectedConnections.length === 0) {
+                showToast('Please select at least one connection to invite', 'error');
+                return;
+            }
+
+            const sendBtn = modal.querySelector('#sendInvitationsBtn');
+            const originalText = sendBtn.textContent;
+            sendBtn.textContent = 'Sending...';
+            sendBtn.disabled = true;
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const targetUid of selectedConnections) {
+                try {
+                    const response = await fetch(`/api/bubbles/${bubbleId}/invite`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            target_uid: targetUid
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error('Failed to invite:', targetUid, data.error);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error('Invite error:', targetUid, error);
+                }
+            }
+
+            modal.remove();
+
+            if (successCount > 0) {
+                showToast(`Invitations sent successfully!`, 'success');
+                // Don't reload immediately as invitations need to be accepted
+            } else {
+                showToast('Failed to send invitations. Please try again.', 'error');
+            }
+        }
+
+        function showToast(message, type) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--info)'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 0.5rem;
+                z-index: 1000;
+                font-weight: 500;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+
+    <style>
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .dashboard-layout {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Bubble Header Card */
+        .bubble-header-card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .bubble-title-section h1 {
+            font-size: 2.5rem;
+            line-height: 1.2;
+        }
+
+        .bubble-stats-row {
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            min-width: 150px;
+        }
+
+        .stat-icon {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .creator-actions {
+            flex-wrap: wrap;
+        }
+
+        /* Consent Section */
+        .consent-section {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .consent-controls {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* User Rank Card */
+        .user-rank-card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .rank-badge-large {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-value {
+            line-height: 1.2;
+        }
+
+        /* Leaderboard */
+        .leaderboard-container {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .leaderboard-header {
+            background: var(--bg-secondary);
+        }
+
+        .leaderboard-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            transition: background-color 0.2s ease;
+        }
+
+        .leaderboard-item:hover {
+            background: var(--bg-hover) !important;
+            transform: translateX(4px);
+        }
+
+        .leaderboard-item.current-user-row {
+            background: var(--bg-secondary) !important;
+            border-left: 4px solid var(--primary) !important;
+        }
+
+        .rank-column {
+            width: 60px;
+            text-align: center;
+        }
+
+        .rank-badge, .rank-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            min-height: 40px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .rank-badge.rank-1 {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+        }
+
+        .rank-badge.rank-2 {
+            background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+            color: #000;
+            box-shadow: 0 4px 8px rgba(192, 192, 192, 0.3);
+        }
+
+        .rank-badge.rank-3 {
+            background: linear-gradient(135deg, #CD7F32, #A0522D);
+            color: #fff;
+            box-shadow: 0 4px 8px rgba(205, 127, 50, 0.3);
+        }
+
+        .rank-number {
+            color: var(--text-secondary);
+            border: none;
+            background: transparent;
+        }
+
+        .user-column {
+            flex: 1;
+            margin-left: 1rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .current-user-indicator {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .user-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-column {
+            width: 150px;
+            text-align: center;
+        }
+
+        .progress-score {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .progress-bar {
+            width: 100px;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .chapters-column {
+            width: 120px;
+            text-align: center;
+        }
+
+        .chapters-completed {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chapters-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .tips-section .island {
+            padding: 2rem;
+        }
+
+        .tips-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .tips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .tip-item {
+            transition: transform 0.2s ease;
+        }
+
+        .tip-item:hover {
+            transform: translateX(4px);
+        }
+
+        .tip-item .material-symbols-outlined {
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .bubble-title-section h1 {
+                font-size: 2rem;
+            }
+
+            .bubble-stats-row {
+                gap: 1rem;
+            }
+
+            .stat-box {
+                min-width: 120px;
+            }
+
+            .user-stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .leaderboard-item {
+                padding: 1rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .rank-col, .progress-col, .chapters-col {
+                width: auto !important;
+                text-align: left;
+            }
+
+            .tips-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .creator-actions {
+                flex-direction: column;
+            }
+
+            .consent-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .bubble-header-card,
+            .consent-section,
+            .user-rank-card,
+            .leaderboard-container {
+                margin-bottom: 1.5rem;
+            }
+
+            .bubble-title-section h1 {
+                font-size: 1.75rem;
+            }
+
+            .rank-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .tips-section .island {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+
+</body>
+</html>

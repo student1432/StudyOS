@@ -57,7 +57,7 @@
                 <div class="dashboard-top-right">
 
                     <!-- Profile Island -->
-                    <a href="{{ url_for('profile_resume') }}" class="island island-profile-split" style="text-decoration:none;">
+                    <a href="{{ url_for('profile_dashboard') }}" class="island island-profile-split" style="text-decoration:none;">
                         <h3>Profile</h3>
                         <div class="profile-content-split">
                             <div class="profile-picture-section">
@@ -109,7 +109,7 @@
                     <span>{{ overall_progress }}%</span>
                 </div>
                 <div class="progress-bar-track">
-                    <div class="progress-bar-fill" style="width:{{ overall_progress }}%"></div>
+                    <div class="progress-bar-fill" style="width: {{ overall_progress }}%;"></div>
                 </div>
 
                 {% if subject_progress %}

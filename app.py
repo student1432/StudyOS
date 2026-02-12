@@ -412,7 +412,21 @@ def initialize_profile_fields(uid):
     defaults = {
         'about': '', 'skills': [], 'hobbies': [], 'certificates': [],
         'achievements': [], 'chapters_completed': {}, 'time_studied': 0,
-        'goals': [], 'tasks': [], 'milestones': [], 'exam_results': []
+        'goals': [], 'tasks': [], 'todos': [], 'milestones': [], 'exam_results': [],
+        'connections': {
+            'accepted': [],
+            'pending_sent': [],
+            'pending_received': []
+        },
+        'bubbles': [],
+        'academic_sharing_consents': {},
+        'profile_visibility': {
+            'name': True,
+            'grade': True,
+            'school': True,
+            'academic_progress': False,
+            'subjects': True
+        }
     }
     # interests is a structured object now
     if 'interests' not in user_data:
@@ -490,6 +504,20 @@ def signup():
                 'goals': [], 'tasks': [], 'todos': [], 'milestones': [],
                 'exam_results': [],
                 'timezone': 'Asia/Kolkata',  # Default timezone (IST)
+                'connections': {
+                    'accepted': [],
+                    'pending_sent': [],
+                    'pending_received': []
+                },
+                'bubbles': [],
+                'academic_sharing_consents': {},
+                'profile_visibility': {
+                    'name': True,
+                    'grade': True,
+                    'school': True,
+                    'academic_progress': False,
+                    'subjects': True
+                },
                 'created_at': datetime.utcnow().isoformat()
             }
             db.collection('users').document(uid).set(user_data)
@@ -1151,6 +1179,58 @@ def institution_teacher_dashboard():
                            heatmap_data=analytics['heatmap'],
                            at_risk_students=analytics['at_risk'])
 
+@app.route('/institution/teacher/class/<class_id>/upload', methods=['GET', 'POST'])
+@require_teacher_v2
+def institution_teacher_upload_file(class_id):
+    uid = session['uid']
+    profile = _get_teacher_profile(uid) or {}
+    # Check if teacher owns the class
+    class_doc = db.collection('classes').document(class_id).get()
+    if not class_doc.exists or class_doc.to_dict().get('teacher_id') != uid:
+        flash('Unauthorized', 'error')
+        return redirect(url_for('institution_teacher_dashboard'))
+    if request.method == 'POST':
+        file = request.files.get('file')
+        if not file or file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(request.url)
+        filename = secure_filename(file.filename)
+        file_id = str(uuid.uuid4())
+        # Save to local storage
+        upload_folder = os.path.join(app.root_path, 'uploads')
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+        file_path = os.path.join(upload_folder, f'{file_id}_{filename}')
+        file.save(file_path)
+        file_url = url_for('serve_upload', filename=f'{file_id}_{filename}')
+        # Save to Firestore
+        db.collection('class_files').document(file_id).set({
+            'id': file_id,
+            'class_id': class_id,
+            'file_name': filename,
+            'file_url': file_url,
+            'uploaded_by': uid,
+            'upload_date': datetime.utcnow().isoformat(),
+            'file_type': 'notes',
+            'file_size': file.content_length or 0
+        })
+        flash('File uploaded successfully', 'success')
+        return redirect(url_for('institution_teacher_dashboard'))
+    # GET: render upload form
+    class_data = class_doc.to_dict()
+    return render_template('institution_teacher_upload.html', class_id=class_id, class_name=class_data.get('name'), profile=profile)
+
+@app.route('/uploads/<filename>')
+def serve_upload(filename):
+    """Serve uploaded files from local storage"""
+    try:
+        return send_from_directory(
+            os.path.join(app.root_path, 'uploads'),
+            filename
+        )
+    except FileNotFoundError:
+        abort(404)
+
 @app.route('/profile_banners/<filename>')
 def serve_profile_banner(filename):
     """Serve profile banners from local storage"""
@@ -1211,6 +1291,174 @@ def profile_dashboard():
         'profile_picture': user_data.get('profile_picture')
     }
     return render_template('main_dashboard.html', **context)
+
+@app.route('/student/class/files', methods=['GET'])
+@require_login
+def student_files():
+    uid = session['uid']
+    user_data = get_user_data(uid)
+    class_ids = user_data.get('class_ids', [])
+    files = []
+    for class_id in class_ids:
+        class_files = db.collection('class_files').where('class_id', '==', class_id).stream()
+        for f in class_files:
+            f_data = f.to_dict()
+            # Add class name
+            class_doc = db.collection('classes').document(class_id).get()
+            class_name = class_doc.to_dict().get('name', 'Unknown') if class_doc.exists else 'Unknown'
+            f_data['class_name'] = class_name
+            files.append(f_data)
+    # Group by class
+    from collections import defaultdict
+    grouped_files = defaultdict(list)
+    for f in files:
+        grouped_files[f['class_name']].append(f)
+    return render_template('student_class_files.html', grouped_files=grouped_files)
+
+@app.route('/download/class_file/<file_id>', methods=['GET'])
+@require_login
+def download_class_file(file_id):
+    file_doc = db.collection('class_files').document(file_id).get()
+    if not file_doc.exists:
+        abort(404)
+    file_data = file_doc.to_dict()
+    class_id = file_data['class_id']
+    uid = session['uid']
+    user_data = get_user_data(uid)
+    if class_id not in user_data.get('class_ids', []):
+        abort(403)
+    # Redirect to file_url
+    return redirect(file_data['file_url'])
+
+# ============================================================================
+# COMMUNITY SYSTEM
+# ============================================================================
+
+@app.route('/community')
+@require_login
+def community_dashboard():
+    """Community dashboard with connections and bubbles"""
+    uid = session['uid']
+    user_data = get_user_data(uid)
+    if not user_data:
+        flash('User data not found', 'error')
+        return redirect(url_for('logout'))
+
+    # Get connections data
+    connections_data = get_connections_data(uid)
+
+    # Get user's bubbles (both created and joined)
+    user_bubbles = []
+    bubbles_ref = db.collection('bubbles')
+    for bubble_doc in bubbles_ref.stream():
+        bubble_data = bubble_doc.to_dict()
+        member_uids = bubble_data.get('member_uids', [])
+
+        # Show bubbles where user is a member (creator or joined via invitation)
+        if uid in member_uids:
+            user_bubbles.append({
+                'id': bubble_doc.id,
+                'name': bubble_data.get('name'),
+                'description': bubble_data.get('description'),
+                'member_count': len(member_uids),
+                'created_at': bubble_data.get('created_at'),
+                'is_creator': bubble_data.get('creator_uid') == uid
+            })
+
+    # Get user's bubble invitations
+    bubble_invitations = []
+    if hasattr(user_data, 'get') and user_data.get('pending_bubble_invitations'):
+        for invitation_id in user_data.get('pending_bubble_invitations', []):
+            try:
+                invite_doc = db.collection('bubble_invitations').document(invitation_id).get()
+                if invite_doc.exists:
+                    invitation = invite_doc.to_dict()
+                    bubble_invitations.append({
+                        'id': invitation_id,
+                        'bubble_name': invitation.get('bubble_name'),
+                        'sender_name': None,  # Could fetch sender name if needed
+                        'message': invitation.get('message'),
+                        'created_at': invitation.get('created_at')
+                    })
+            except Exception as e:
+                continue
+
+    context = {
+        'user': user_data,
+        'name': user_data.get('name'),
+        'connections_data': connections_data,
+        'connections_count': len(connections_data.get('accepted', [])),
+        'user_bubbles': user_bubbles,
+        'bubble_invitations': bubble_invitations
+    }
+
+    return render_template('community_dashboard.html', **context)
+
+def get_connections_data(uid):
+    """Helper function to get formatted connections data"""
+    try:
+        user_data = get_user_data(uid)
+        if not user_data:
+            return {'accepted': [], 'pending_sent': [], 'pending_received': []}
+
+        connections = user_data.get('connections', {})
+
+        # Get detailed info for each connection
+        result = {
+            'accepted': [],
+            'pending_sent': [],
+            'pending_received': []
+        }
+
+        # Get accepted connections
+        for conn_uid in connections.get('accepted', []):
+            conn_data = get_user_data(conn_uid)
+            if conn_data:
+                profile = {
+                    'uid': conn_uid,
+                    'name': conn_data.get('name'),
+                    'purpose_display': conn_data.get('purpose', '').replace('_', ' ').title(),
+                    'last_active': conn_data.get('last_login_date')
+                }
+                result['accepted'].append(profile)
+
+        # Get pending sent requests
+        for conn_uid in connections.get('pending_sent', []):
+            conn_data = get_user_data(conn_uid)
+            if conn_data:
+                profile = {
+                    'uid': conn_uid,
+                    'name': conn_data.get('name'),
+                    'purpose_display': conn_data.get('purpose', '').replace('_', ' ').title()
+                }
+                result['pending_sent'].append(profile)
+
+        # Get pending received requests with connection IDs
+        for conn_uid in connections.get('pending_received', []):
+            # Find connection request
+            conn_requests = db.collection('connections').where('sender_uid', '==', conn_uid).where('receiver_uid', '==', uid).where('status', '==', 'pending').stream()
+            conn_request = None
+            for req in conn_requests:
+                conn_request = req
+                break
+
+            if conn_request:
+                conn_data = get_user_data(conn_uid)
+                if conn_data:
+                    profile = {
+                        'uid': conn_uid,
+                        'name': conn_data.get('name'),
+                        'purpose_display': conn_data.get('purpose', '').replace('_', ' ').title(),
+                        'connection_id': conn_request.id,
+                        'message': conn_request.to_dict().get('message', '')
+                    }
+                    result['pending_received'].append(profile)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Get connections data error: {str(e)}")
+        return {'accepted': [], 'pending_sent': [], 'pending_received': []}
 
 # ============================================================================
 # AI ASSISTANT
@@ -1487,10 +1735,950 @@ def get_thread_history(chatbot_type, thread_id):
         return jsonify({'error': 'Failed to load thread history'}), 500
 
 # ============================================================================
-# PROFILE / RESUME
+# CONNECTIONS SYSTEM
 # ============================================================================
 
-@app.route('/profile/resume')
+@app.route('/api/people/search', methods=['GET'])
+@require_login
+def search_people():
+    """Search for people by name with filters and privacy controls"""
+    uid = session['uid']
+    query = request.args.get('q', '').strip()
+    grade_filter = request.args.get('grade')
+    school_filter = request.args.get('school')
+    subject_filter = request.args.get('subject')
+    academic_range = request.args.get('academic_range')
+
+    logger.info(f"MAIN Search request: uid={uid}, query='{query}'")
+
+    if not query or len(query) < 2:
+        return jsonify({'error': 'Search query must be at least 2 characters'}), 400
+
+    try:
+        logger.info("MAIN: Starting user search query")
+        users_ref = db.collection('users')
+        users = []
+
+        logger.info("MAIN: Iterating through users collection")
+        for doc in users_ref.stream():
+            try:
+                user_data = doc.to_dict()
+                logger.debug(f"MAIN: Processing user: {doc.id}")
+
+                # Skip self
+                if doc.id == uid:
+                    logger.debug("MAIN: Skipping self")
+                    continue
+
+                # Check privacy settings
+                visibility = user_data.get('profile_visibility', {})
+                if not visibility.get('name', True):
+                    logger.debug(f"MAIN: Skipping user {doc.id} - name not visible")
+                    continue
+
+                # Name matching (case-insensitive)
+                name = user_data.get('name', '').lower()
+                if query.lower() not in name:
+                    logger.debug(f"MAIN: Name '{name}' doesn't contain query '{query.lower()}'")
+                    continue
+
+                logger.debug(f"MAIN: User {doc.id} matches search")
+
+                # Build profile for search results
+                profile = {
+                    'uid': doc.id,
+                    'name': user_data.get('name'),
+                    'purpose_display': user_data.get('purpose', '').replace('_', ' ').title(),
+                    'academic_summary': '',
+                    'connection_status': 'none'
+                }
+
+                users.append(profile)
+                logger.debug(f"MAIN: Added user {doc.id} to results")
+
+            except Exception as user_error:
+                logger.error(f"MAIN: Error processing user {doc.id}: {str(user_error)}")
+                continue
+
+        logger.info(f"MAIN: Found {len(users)} matching users")
+
+        # Limit results
+        users = users[:20]
+
+        return jsonify({
+            'results': users,
+            'total': len(users),
+            'query': query
+        })
+
+    except Exception as e:
+        logger.error(f"MAIN: People search error: {str(e)}")
+        return jsonify({'error': 'Search failed', 'details': str(e)}), 500
+
+# ============================================================================
+# BUBBLES SYSTEM
+# ============================================================================
+
+@app.route('/api/bubbles/create', methods=['POST'])
+@require_login
+def create_bubble():
+    """Create a new study bubble"""
+    uid = session['uid']
+
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        description = data.get('description', '').strip()
+
+        if not name:
+            return jsonify({'error': 'Bubble name is required'}), 400
+
+        bubble_id = f"bubble_{uid}_{int(time.time())}"
+        bubble_data = {
+            'bubble_id': bubble_id,
+            'name': name,
+            'description': description,
+            'creator_uid': uid,
+            'member_uids': [uid],  # Creator is automatically a member
+            'created_at': datetime.utcnow().isoformat(),
+            'settings': {
+                'require_consent': True,
+                'leaderboard_enabled': True
+            }
+        }
+
+        # Save bubble
+        db.collection('bubbles').document(bubble_id).set(bubble_data)
+
+        # Add bubble to user's bubbles list
+        user_ref = db.collection('users').document(uid)
+        user_ref.update({
+            'bubbles': firestore.ArrayUnion([bubble_id])
+        })
+
+        logger.info(f"Created bubble {bubble_id} by user {uid}")
+
+        return jsonify({
+            'success': True,
+            'bubble_id': bubble_id,
+            'message': 'Study bubble created successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Bubble creation error: {str(e)}")
+        return jsonify({'error': 'Failed to create bubble', 'details': str(e)}), 500
+
+@app.route('/api/bubbles/<bubble_id>/delete', methods=['DELETE'])
+@require_login
+def delete_bubble(bubble_id):
+    """Delete a study bubble"""
+    uid = session['uid']
+
+    try:
+        # Get bubble to verify ownership
+        bubble_doc = db.collection('bubbles').document(bubble_id).get()
+        if not bubble_doc.exists:
+            return jsonify({'error': 'Bubble not found'}), 404
+
+        bubble_data = bubble_doc.to_dict()
+        if bubble_data.get('creator_uid') != uid:
+            return jsonify({'error': 'Not authorized to delete this bubble'}), 403
+
+        # Remove bubble from all members' bubbles lists
+        member_uids = bubble_data.get('member_uids', [])
+        batch = db.batch()
+
+        for member_uid in member_uids:
+            batch.update(db.collection('users').document(member_uid), {
+                'bubbles': firestore.ArrayRemove([bubble_id])
+            })
+
+        # Delete the bubble document
+        batch.delete(db.collection('bubbles').document(bubble_id))
+
+        batch.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Bubble deleted successfully'
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to delete bubble: {str(e)}'}), 500
+
+@app.route('/api/user/privacy/leaderboard', methods=['POST'])
+@require_login
+def update_leaderboard_consent():
+    """Update user's privacy consent for leaderboard participation"""
+    uid = session['uid']
+
+    try:
+        data = request.get_json()
+        allow_leaderboard = data.get('allow_leaderboard', False)
+
+        # Update user privacy settings
+        user_ref = db.collection('users').document(uid)
+        user_ref.update({
+            'privacy_settings.allow_leaderboard': allow_leaderboard
+        })
+
+        return jsonify({
+            'success': True,
+            'message': 'Privacy preference updated successfully'
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to update privacy settings: {str(e)}'}), 500
+
+@app.route('/api/bubbles/join', methods=['POST'])
+@require_login
+def join_bubble_by_code():
+    """Join a bubble using invite code"""
+    uid = session['uid']
+
+    try:
+        data = request.get_json()
+        invite_code = data.get('invite_code', '').strip()
+
+        if not invite_code:
+            return jsonify({'error': 'Invite code is required'}), 400
+
+        # Find bubble by invite code
+        bubbles_ref = db.collection('bubbles')
+        bubble_query = bubbles_ref.where('invite_code', '==', invite_code).limit(1)
+        bubble_docs = bubble_query.get()
+
+        if not bubble_docs:
+            return jsonify({'error': 'Invalid invite code'}), 404
+
+        bubble_doc = next(iter(bubble_docs))
+        bubble_data = bubble_doc.to_dict()
+        bubble_id = bubble_doc.id
+
+        # Check if user is already a member
+        member_uids = bubble_data.get('member_uids', [])
+        if uid in member_uids:
+            return jsonify({'error': 'You are already a member of this bubble'}), 400
+
+        # Add user to bubble members
+        db.collection('bubbles').document(bubble_id).update({
+            'member_uids': firestore.ArrayUnion([uid])
+        })
+
+        # Add bubble to user's bubbles list
+        db.collection('users').document(uid).update({
+            'bubbles': firestore.ArrayUnion([bubble_id])
+        })
+
+        return jsonify({
+            'success': True,
+            'message': 'Successfully joined the bubble!',
+            'bubble_id': bubble_id,
+            'bubble_name': bubble_data.get('name')
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to join bubble: {str(e)}'}), 500
+
+@app.route('/api/bubbles/<bubble_id>/invite', methods=['POST'])
+@require_login
+def send_bubble_invitation(bubble_id):
+    """Send bubble invitation to a connection"""
+    uid = session['uid']
+
+    try:
+        data = request.get_json()
+        target_uid = data.get('target_uid')
+
+        if not target_uid:
+            return jsonify({'error': 'Target user required'}), 400
+
+        # Verify bubble ownership
+        bubble_doc = db.collection('bubbles').document(bubble_id).get()
+        if not bubble_doc.exists:
+            return jsonify({'error': 'Bubble not found'}), 404
+
+        bubble_data = bubble_doc.to_dict()
+        if bubble_data.get('creator_uid') != uid:
+            return jsonify({'error': 'Not authorized to send invitations for this bubble'}), 403
+
+        # Check if target is already a member
+        if target_uid in bubble_data.get('member_uids', []):
+            return jsonify({'error': 'User is already a member of this bubble'}), 400
+
+        # Check if invitation already sent (you could store pending invitations)
+        # For now, just create a notification/invitation record
+
+        invitation_id = f"invite_{bubble_id}_{target_uid}_{int(time.time())}"
+        invitation_data = {
+            'invitation_id': invitation_id,
+            'bubble_id': bubble_id,
+            'bubble_name': bubble_data.get('name'),
+            'sender_uid': uid,
+            'receiver_uid': target_uid,
+            'status': 'pending',
+            'created_at': datetime.utcnow().isoformat(),
+            'message': f'You have been invited to join the study bubble "{bubble_data.get("name")}"'
+        }
+
+        # Store invitation
+        db.collection('bubble_invitations').document(invitation_id).set(invitation_data)
+
+        # Add to receiver's pending invitations
+        db.collection('users').document(target_uid).update({
+            'pending_bubble_invitations': firestore.ArrayUnion([invitation_id])
+        })
+
+        return jsonify({
+            'success': True,
+            'invitation_id': invitation_id,
+            'message': 'Invitation sent successfully'
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to send invitation: {str(e)}'}), 500
+
+@app.route('/api/bubbles/invitations/<invitation_id>/accept', methods=['POST'])
+@require_login
+def accept_bubble_invitation(invitation_id):
+    """Accept a bubble invitation"""
+    uid = session['uid']
+
+    try:
+        # Get invitation
+        invite_doc = db.collection('bubble_invitations').document(invitation_id).get()
+        if not invite_doc.exists:
+            return jsonify({'error': 'Invitation not found'}), 404
+
+        invitation = invite_doc.to_dict()
+
+        # Verify user is the receiver
+        if invitation['receiver_uid'] != uid:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        # Check if already processed
+        if invitation['status'] != 'pending':
+            return jsonify({'error': 'Invitation already processed'}), 400
+
+        bubble_id = invitation['bubble_id']
+
+        # Get bubble to verify it exists
+        bubble_doc = db.collection('bubbles').document(bubble_id).get()
+        if not bubble_doc.exists:
+            return jsonify({'error': 'Bubble no longer exists'}), 404
+
+        # Ask for consent
+        consent_given = request.get_json().get('consent', False)
+        if not consent_given:
+            return jsonify({
+                'needs_consent': True,
+                'bubble_name': invitation['bubble_name'],
+                'message': 'Please confirm you want to join this bubble and share your progress on the leaderboard.'
+            }), 200
+
+        # Add user to bubble
+        db.collection('bubbles').document(bubble_id).update({
+            'member_uids': firestore.ArrayUnion([uid])
+        })
+
+        # Add bubble to user's bubbles
+        db.collection('users').document(uid).update({
+            'bubbles': firestore.ArrayUnion([bubble_id]),
+            'privacy_settings.allow_leaderboard': True  # They consented
+        })
+
+        # Update invitation status
+        db.collection('bubble_invitations').document(invitation_id).update({
+            'status': 'accepted',
+            'accepted_at': datetime.utcnow().isoformat()
+        })
+
+        # Remove from pending invitations
+        db.collection('users').document(uid).update({
+            'pending_bubble_invitations': firestore.ArrayRemove([invitation_id])
+        })
+
+        return jsonify({
+            'success': True,
+            'bubble_id': bubble_id,
+            'message': f'Successfully joined "{invitation["bubble_name"]}"'
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to accept invitation: {str(e)}'}), 500
+
+@app.route('/api/bubbles/invitations/<invitation_id>/decline', methods=['POST'])
+@require_login
+def decline_bubble_invitation(invitation_id):
+    """Decline a bubble invitation"""
+    uid = session['uid']
+
+    try:
+        # Get invitation
+        invite_doc = db.collection('bubble_invitations').document(invitation_id).get()
+        if not invite_doc.exists:
+            return jsonify({'error': 'Invitation not found'}), 404
+
+        invitation = invite_doc.to_dict()
+
+        # Verify user is the receiver
+        if invitation['receiver_uid'] != uid:
+            return jsonify({'error': 'Not authorized'}), 403
+
+        # Update invitation status
+        db.collection('bubble_invitations').document(invitation_id).update({
+            'status': 'declined',
+            'declined_at': datetime.utcnow().isoformat()
+        })
+
+        # Remove from pending invitations
+        db.collection('users').document(uid).update({
+            'pending_bubble_invitations': firestore.ArrayRemove([invitation_id])
+        })
+
+        return jsonify({
+            'success': True,
+            'message': 'Invitation declined'
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to decline invitation: {str(e)}'}), 500
+
+@app.route('/api/people/search/debug', methods=['GET'])
+def debug_search_people():
+    """Debug version of search without authentication"""
+    query = request.args.get('q', '').strip()
+
+    logger.info(f"DEBUG Search request: query='{query}'")
+
+    if not query or len(query) < 2:
+        return jsonify({'error': 'Search query must be at least 2 characters'}), 400
+
+    try:
+        logger.info("DEBUG: Starting user search query")
+        users_ref = db.collection('users')
+        users = []
+
+        logger.info("DEBUG: Iterating through users collection")
+        for doc in users_ref.stream():
+            try:
+                user_data = doc.to_dict()
+                logger.debug(f"DEBUG: Processing user: {doc.id}")
+
+                # Check privacy settings
+                visibility = user_data.get('profile_visibility', {})
+                if not visibility.get('name', True):
+                    continue
+
+                # Name matching (case-insensitive)
+                name = user_data.get('name', '').lower()
+                if query.lower() not in name:
+                    continue
+
+                logger.debug(f"DEBUG: User {doc.id} matches search")
+
+                # Build profile for search results
+                profile = {
+                    'uid': doc.id,
+                    'name': user_data.get('name'),
+                    'purpose_display': user_data.get('purpose', '').replace('_', ' ').title(),
+                    'academic_summary': '',
+                    'connection_status': 'none'
+                }
+
+                users.append(profile)
+
+            except Exception as user_error:
+                logger.error(f"DEBUG: Error processing user {doc.id}: {str(user_error)}")
+                continue
+
+        logger.info(f"DEBUG: Found {len(users)} matching users")
+        users = users[:5]  # Limit for debug
+
+        return jsonify({
+            'results': users,
+            'total': len(users),
+            'query': query,
+            'debug': True
+        })
+
+    except Exception as e:
+        logger.error(f"DEBUG: Search error: {str(e)}")
+        logger.error(f"DEBUG: Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"DEBUG: Traceback: {traceback.format_exc()}")
+        return jsonify({'error': 'Search failed', 'details': str(e), 'debug': True}), 500
+
+@app.route('/api/debug/users', methods=['GET'])
+def debug_list_users():
+    """Debug endpoint to list all users in database"""
+    try:
+        users_ref = db.collection('users')
+        users = []
+        
+        for doc in users_ref.stream():
+            user_data = doc.to_dict()
+            users.append({
+                'uid': doc.id,
+                'name': user_data.get('name'),
+                'purpose': user_data.get('purpose'),
+                'has_profile_visibility': 'profile_visibility' in user_data,
+                'name_visible': user_data.get('profile_visibility', {}).get('name', True)
+            })
+        
+        return jsonify({
+            'total_users': len(users),
+            'users': users[:10],  # Limit to first 10
+            'debug': True
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'debug': True}), 500
+
+@app.route('/bubbles')
+@require_login
+def academic_leaderboard():
+    """Academic leaderboard - shows study performance rankings"""
+    uid = session['uid']
+    user_data = get_user_data(uid)
+    if not user_data:
+        flash('User data not found', 'error')
+        return redirect(url_for('logout'))
+
+    # Get all users for leaderboard
+    users_ref = db.collection('users')
+    leaderboard_data = []
+
+    for doc in users_ref.stream():
+        user_doc = doc.to_dict()
+        user_id = doc.id
+
+        # Calculate academic progress for each user
+        try:
+            progress = calculate_academic_progress(user_doc)
+            overall_score = progress.get('overall', 0)
+
+            leaderboard_data.append({
+                'uid': user_id,
+                'name': user_doc.get('name', 'Anonymous'),
+                'purpose_display': user_doc.get('purpose', '').replace('_', ' ').title(),
+                'overall_score': overall_score,
+                'total_chapters': progress.get('total_chapters', 0),
+                'completed_chapters': progress.get('total_completed', 0),
+                'grade': None,
+                'is_current_user': user_id == uid
+            })
+
+            # Add grade info if available
+            purpose = user_doc.get('purpose')
+            if purpose == 'high_school' and user_doc.get('highschool'):
+                leaderboard_data[-1]['grade'] = user_doc['highschool'].get('grade')
+            elif purpose == 'after_tenth' and user_doc.get('after_tenth'):
+                leaderboard_data[-1]['grade'] = user_doc['after_tenth'].get('grade')
+
+        except Exception as e:
+            # Skip users with calculation errors
+            continue
+
+    # Sort by overall score (highest first)
+    leaderboard_data.sort(key=lambda x: x['overall_score'], reverse=True)
+
+    # Add rankings
+    for i, user in enumerate(leaderboard_data, 1):
+        user['rank'] = i
+
+    # Find current user's rank
+    current_user_rank = None
+    current_user_data = None
+    for user in leaderboard_data:
+        if user['is_current_user']:
+            current_user_rank = user['rank']
+            current_user_data = user
+            break
+
+    context = {
+        'user': user_data,
+        'name': user_data.get('name'),
+        'leaderboard': leaderboard_data[:50],  # Top 50
+        'current_user_rank': current_user_rank,
+        'current_user_data': current_user_data,
+        'total_participants': len(leaderboard_data)
+    }
+
+    return render_template('academic_leaderboard.html', **context)
+
+@app.route('/bubble/<bubble_id>')
+@require_login
+def bubble_detail(bubble_id):
+    """Individual bubble page with bubble-specific leaderboard"""
+    uid = session['uid']
+    user_data = get_user_data(uid)
+    if not user_data:
+        flash('User data not found', 'error')
+        return redirect(url_for('logout'))
+
+    # Get bubble data
+    bubble_doc = db.collection('bubbles').document(bubble_id).get()
+    if not bubble_doc.exists:
+        flash('Bubble not found', 'error')
+        return redirect(url_for('community_dashboard'))
+
+    bubble_data = bubble_doc.to_dict()
+
+    # Check if user is a member of this bubble
+    is_member = uid in bubble_data.get('member_uids', [])
+    is_creator = bubble_data.get('creator_uid') == uid
+
+    if not is_member and not is_creator:
+        flash('You are not a member of this bubble', 'error')
+        return redirect(url_for('community_dashboard'))
+
+    # Get bubble members for leaderboard
+    member_uids = bubble_data.get('member_uids', [])
+    leaderboard_data = []
+
+    for member_uid in member_uids:
+        try:
+            member_data = get_user_data(member_uid)
+            if member_data:
+                # Check if user has consented to leaderboard participation
+                privacy_settings = member_data.get('privacy_settings', {})
+                allow_leaderboard = privacy_settings.get('allow_leaderboard', False)
+
+                if allow_leaderboard:
+                    progress = calculate_academic_progress(member_data)
+                    overall_score = progress.get('overall', 0)
+
+                    leaderboard_data.append({
+                        'uid': member_uid,
+                        'name': member_data.get('name', 'Anonymous'),
+                        'purpose_display': member_data.get('purpose', '').replace('_', ' ').title(),
+                        'overall_score': overall_score,
+                        'total_chapters': progress.get('total_chapters', 0),
+                        'completed_chapters': progress.get('total_completed', 0),
+                        'grade': None,
+                        'is_current_user': member_uid == uid
+                    })
+
+                    # Add grade info if available
+                    purpose = member_data.get('purpose')
+                    if purpose == 'high_school' and member_data.get('highschool'):
+                        leaderboard_data[-1]['grade'] = member_data['highschool'].get('grade')
+                    elif purpose == 'after_tenth' and member_data.get('after_tenth'):
+                        leaderboard_data[-1]['grade'] = member_data['after_tenth'].get('grade')
+
+        except Exception as e:
+            # Skip members with calculation errors
+            continue
+
+    # Sort by overall score (highest first)
+    leaderboard_data.sort(key=lambda x: x['overall_score'], reverse=True)
+
+    # Add rankings
+    for i, user in enumerate(leaderboard_data, 1):
+        user['rank'] = i
+
+    # Find current user's rank
+    current_user_rank = None
+    current_user_data = None
+    for user in leaderboard_data:
+        if user['is_current_user']:
+            current_user_rank = user['rank']
+            current_user_data = user
+            break
+
+    context = {
+        'user': user_data,
+        'name': user_data.get('name'),
+        'bubble': {
+            'id': bubble_id,
+            'name': bubble_data.get('name'),
+            'description': bubble_data.get('description'),
+            'member_count': len(member_uids),
+            'created_at': bubble_data.get('created_at'),
+            'is_creator': is_creator
+        },
+        'leaderboard': leaderboard_data[:50],  # Top 50 in bubble
+        'current_user_rank': current_user_rank,
+        'current_user_data': current_user_data,
+        'total_participants': len(leaderboard_data)
+    }
+
+    return render_template('bubble_detail.html', **context)
+
+@app.route('/api/connections/send', methods=['POST'])
+@require_login
+def send_connection_request():
+    """Send a connection request to another user"""
+    uid = session['uid']
+
+    try:
+        data = request.get_json()
+        target_uid = data.get('target_uid')
+        message = data.get('message', 'Hi! I found you on StudyOS and thought we might study together.')
+
+        if not target_uid:
+            return jsonify({'error': 'Target user ID is required'}), 400
+
+        if target_uid == uid:
+            return jsonify({'error': 'Cannot send connection request to yourself'}), 400
+
+        # Check if users are already connected
+        user_data = get_user_data(uid)
+        target_data = get_user_data(target_uid)
+
+        if not user_data or not target_data:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Check if already connected
+        user_connections = user_data.get('connections', {})
+        target_connections = target_data.get('connections', {})
+
+        if target_uid in user_connections.get('accepted', []):
+            return jsonify({'error': 'Already connected to this user'}), 400
+
+        # Check if request already sent
+        if target_uid in user_connections.get('pending_sent', []):
+            return jsonify({'error': 'Connection request already sent'}), 400
+
+        # Check if request already received
+        if uid in target_connections.get('pending_received', []):
+            return jsonify({'error': 'Connection request already exists'}), 400
+
+        # Create connection request
+        connection_id = f"{uid}_{target_uid}_{int(time.time())}"
+        connection_data = {
+            'connection_id': connection_id,
+            'sender_uid': uid,
+            'receiver_uid': target_uid,
+            'status': 'pending',
+            'message': message,
+            'created_at': datetime.utcnow().isoformat()
+        }
+
+        # Save to connections collection
+        db.collection('connections').document(connection_id).set(connection_data)
+
+        # Update user connection lists
+        db.collection('users').document(uid).update({
+            'connections.pending_sent': firestore.ArrayUnion([target_uid])
+        })
+        db.collection('users').document(target_uid).update({
+            'connections.pending_received': firestore.ArrayUnion([uid])
+        })
+
+        return jsonify({
+            'success': True,
+            'message': 'Connection request sent successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Send connection error: {str(e)}")
+        return jsonify({'error': 'Failed to send connection request', 'details': str(e)}), 500
+
+@app.route('/api/connections/<connection_id>/accept', methods=['POST'])
+@require_login
+def accept_connection_request(connection_id):
+    """Accept a connection request"""
+    uid = session['uid']
+
+    try:
+        # Get connection request
+        connection_doc = db.collection('connections').document(connection_id).get()
+        if not connection_doc.exists:
+            return jsonify({'error': 'Connection request not found'}), 404
+
+        connection_data = connection_doc.to_dict()
+
+        # Verify user is the receiver
+        if connection_data['receiver_uid'] != uid:
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        # Check if already accepted
+        if connection_data['status'] != 'pending':
+            return jsonify({'error': 'Connection request already processed'}), 400
+
+        batch = db.batch()
+
+        # Update connection status
+        batch.update(db.collection('connections').document(connection_id), {
+            'status': 'accepted',
+            'accepted_at': datetime.utcnow().isoformat()
+        })
+
+        # Update user connection lists
+        sender_uid = connection_data['sender_uid']
+        batch.update(db.collection('users').document(uid), {
+            'connections.accepted': firestore.ArrayUnion([sender_uid]),
+            'connections.pending_received': firestore.ArrayRemove([sender_uid])
+        })
+        batch.update(db.collection('users').document(sender_uid), {
+            'connections.accepted': firestore.ArrayUnion([uid]),
+            'connections.pending_sent': firestore.ArrayRemove([uid])
+        })
+
+        batch.commit()
+
+        return jsonify({'success': True, 'message': 'Connection accepted'})
+
+    except Exception as e:
+        logger.error(f"Accept connection error: {str(e)}")
+        return jsonify({'error': 'Failed to accept connection', 'details': str(e)}), 500
+
+@app.route('/api/connections/<connection_id>/decline', methods=['POST'])
+@require_login
+def decline_connection_request(connection_id):
+    """Decline a connection request"""
+    uid = session['uid']
+
+    try:
+        # Get connection request
+        connection_doc = db.collection('connections').document(connection_id).get()
+        if not connection_doc.exists:
+            return jsonify({'error': 'Connection request not found'}), 404
+
+        connection_data = connection_doc.to_dict()
+
+        # Verify user is the receiver
+        if connection_data['receiver_uid'] != uid:
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        # Check if already processed
+        if connection_data['status'] != 'pending':
+            return jsonify({'error': 'Connection request already processed'}), 400
+
+        batch = db.batch()
+
+        # Update connection status
+        batch.update(db.collection('connections').document(connection_id), {
+            'status': 'declined'
+        })
+
+        # Update user connection lists
+        sender_uid = connection_data['sender_uid']
+        batch.update(db.collection('users').document(uid), {
+            'connections.pending_received': firestore.ArrayRemove([sender_uid])
+        })
+        batch.update(db.collection('users').document(sender_uid), {
+            'connections.pending_sent': firestore.ArrayRemove([uid])
+        })
+
+        batch.commit()
+
+        return jsonify({'success': True, 'message': 'Connection request declined'})
+
+    except Exception as e:
+        logger.error(f"Decline connection error: {str(e)}")
+        return jsonify({'error': 'Failed to decline connection', 'details': str(e)}), 500
+
+@app.route('/api/connections/<connection_id>/block', methods=['POST'])
+@require_login
+def block_connection(connection_id):
+    """Block a user (removes any connection and prevents future requests)"""
+    uid = session['uid']
+
+    try:
+        # Get connection request
+        connection_doc = db.collection('connections').document(connection_id).get()
+        if not connection_doc.exists:
+            return jsonify({'error': 'Connection request not found'}), 404
+
+        connection_data = connection_doc.to_dict()
+        other_uid = connection_data['sender_uid'] if connection_data['receiver_uid'] == uid else connection_data['receiver_uid']
+
+        batch = db.batch()
+
+        # Remove from all connection lists
+        batch.update(db.collection('users').document(uid), {
+            'connections.accepted': firestore.ArrayRemove([other_uid]),
+            'connections.pending_sent': firestore.ArrayRemove([other_uid]),
+            'connections.pending_received': firestore.ArrayRemove([other_uid])
+        })
+        batch.update(db.collection('users').document(other_uid), {
+            'connections.accepted': firestore.ArrayRemove([uid]),
+            'connections.pending_sent': firestore.ArrayRemove([uid]),
+            'connections.pending_received': firestore.ArrayRemove([uid])
+        })
+
+        # Delete connection record
+        batch.delete(db.collection('connections').document(connection_id))
+
+        batch.commit()
+
+        return jsonify({'success': True, 'message': 'User blocked'})
+
+    except Exception as e:
+        logger.error(f"Block connection error: {str(e)}")
+        return jsonify({'error': 'Failed to block user', 'details': str(e)}), 500
+
+@app.route('/api/connections', methods=['GET'])
+@require_login
+def get_connections():
+    """Get user's connections list"""
+    uid = session['uid']
+
+    try:
+        user_data = get_user_data(uid)
+        if not user_data:
+            return jsonify({'error': 'User data not found'}), 404
+
+        connections = user_data.get('connections', {})
+
+        # Get detailed info for each connection
+        result = {
+            'accepted': [],
+            'pending_sent': [],
+            'pending_received': []
+        }
+
+        # Get accepted connections
+        for conn_uid in connections.get('accepted', []):
+            conn_data = get_user_data(conn_uid)
+            if conn_data:
+                profile = {
+                    'uid': conn_uid,
+                    'name': conn_data.get('name'),
+                    'purpose_display': conn_data.get('purpose', '').replace('_', ' ').title(),
+                    'last_active': conn_data.get('last_login_date')
+                }
+                result['accepted'].append(profile)
+
+        # Get pending sent requests
+        for conn_uid in connections.get('pending_sent', []):
+            conn_data = get_user_data(conn_uid)
+            if conn_data:
+                profile = {
+                    'uid': conn_uid,
+                    'name': conn_data.get('name'),
+                    'purpose_display': conn_data.get('purpose', '').replace('_', ' ').title()
+                }
+                result['pending_sent'].append(profile)
+
+        # Get pending received requests with connection IDs
+        for conn_uid in connections.get('pending_received', []):
+            # Find connection request
+            conn_requests = db.collection('connections').where('sender_uid', '==', conn_uid).where('receiver_uid', '==', uid).where('status', '==', 'pending').stream()
+            conn_request = None
+            for req in conn_requests:
+                conn_request = req
+                break
+
+            if conn_request:
+                conn_data = get_user_data(conn_uid)
+                if conn_data:
+                    profile = {
+                        'uid': conn_uid,
+                        'name': conn_data.get('name'),
+                        'purpose_display': conn_data.get('purpose', '').replace('_', ' ').title(),
+                        'connection_id': conn_request.id,
+                        'message': conn_request.to_dict().get('message', '')
+                    }
+                    result['pending_received'].append(profile)
+
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error(f"Get connections error: {str(e)}")
+        return jsonify({'error': 'Failed to get connections', 'details': str(e)}), 500
 @require_login
 def profile_resume():
     uid = session['uid']

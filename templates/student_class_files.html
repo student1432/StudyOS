@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Files | StudyOS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+
+        <!-- SIDEBAR -->
+        {% include '_sidebar.html' %}
+
+        <!-- MAIN -->
+        <main class="main-content">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <div class="content-header">
+                <h1>Class Files</h1>
+                <p>Download notes and materials from your classes</p>
+            </div>
+
+            {% if grouped_files %}
+            {% for class_name, files in grouped_files.items() %}
+            <div class="study-island" style="margin-bottom:24px;">
+                <div class="study-island-header">
+                    <h3>{{ class_name }}</h3>
+                    <span style="font-size:14px; color:var(--text-muted);">{{ files|length }} file(s)</span>
+                </div>
+                <div style="margin-top:16px;">
+                    {% for file in files %}
+                    <div class="study-item" style="margin-bottom:12px;">
+                        <div class="study-item-body">
+                            <div class="study-item-title">{{ file.file_name }}</div>
+                            <div class="study-item-meta">Uploaded {{ file.upload_date[:10] }} · {{ file.file_size }} bytes</div>
+                        </div>
+                        <div class="study-item-actions">
+                            <a href="{{ url_for('download_class_file', file_id=file.id) }}" class="btn btn-small btn-primary" target="_blank">Download</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="study-island">
+                <div class="empty-state">
+                    <p>No files available. Join a class to access shared materials.</p>
+                </div>
+            </div>
+            {% endif %}
+
+        </main>
+    </div>
+</body>
+
+</html>

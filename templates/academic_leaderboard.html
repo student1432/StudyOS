@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Leaderboard - {{ name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+</head>
+<body>
+    {% include '_sidebar.html' %}
+
+    <main class="main-content">
+        <div class="dashboard-layout">
+            <div class="main-header">
+                <h1>Academic Leaderboard</h1>
+                <p>Top performers and study rankings</p>
+            </div>
+
+            <!-- Current User Rank Card -->
+            {% if current_user_data %}
+            <div class="rank-card" style="background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; text-align: center;">
+                <div class="rank-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; background: var(--primary); color: white; padding: 0.75rem 1.5rem; border-radius: 2rem; font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">
+                    <span class="material-symbols-outlined">workspace_premium</span>
+                    Your Rank: #{{ current_user_rank }}
+                </div>
+                <div class="user-stats" style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem;">
+                    <div class="stat-item">
+                        <div class="stat-number" style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">{{ current_user_data.overall_score }}%</div>
+                        <div class="stat-label" style="font-size: 0.9rem; color: var(--text-secondary);">Overall Progress</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">{{ current_user_data.completed_chapters }}/{{ current_user_data.total_chapters }}</div>
+                        <div class="stat-label" style="font-size: 0.9rem; color: var(--text-secondary);">Chapters Completed</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Leaderboard Table -->
+            <div class="leaderboard-section" style="background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; overflow: hidden;">
+                <div class="leaderboard-header" style="padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); background: var(--bg-secondary);">
+                    <h2 style="margin: 0; font-size: 1.5rem; color: var(--text-primary);">Top Performers</h2>
+                    <div class="participants-count" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        {{ total_participants }} total participants
+                    </div>
+                </div>
+
+                <div class="leaderboard-list">
+                    {% for user in leaderboard %}
+                    <div class="leaderboard-item{% if user.is_current_user %} current-user{% endif %}" data-user-rank="{{ user.rank }}" data-progress="{{ user.overall_score }}">
+
+                        <!-- Rank -->
+                        <div class="rank-column">
+                            {% if user.rank <= 3 %}
+                                <div class="rank-badge rank-{{ user.rank }}">
+                                    {% if user.rank == 1 %}👑{% elif user.rank == 2 %}🥈{% elif user.rank == 3 %}🥉{% else %}{{ user.rank }}{% endif %}
+                                </div>
+                            {% else %}
+                                <div class="rank-number">
+                                    {{ user.rank }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- User Info -->
+                        <div class="user-column">
+                            <div class="user-name">
+                                {{ user.name }}
+                                {% if user.is_current_user %}
+                                    <span class="current-user-indicator">(You)</span>
+                                {% endif %}
+                            </div>
+                            <div class="user-details">
+                                {{ user.purpose_display }}
+                                {% if user.grade %} • Grade {{ user.grade }}{% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Progress -->
+                        <div class="progress-column">
+                            <div class="progress-score">
+                                {{ user.overall_score }}%
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" data-progress="{{ user.overall_score }}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Chapters -->
+                        <div class="chapters-column">
+                            <div class="chapters-completed">
+                                {{ user.completed_chapters }}/{{ user.total_chapters }}
+                            </div>
+                            <div class="chapters-label">
+                                chapters
+                            </div>
+                        </div>
+
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if total_participants > 50 %}
+                <div class="leaderboard-footer" style="padding: 1.5rem 2rem; text-align: center; border-top: 1px solid var(--border);">
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">
+                        Showing top 50 participants. Keep studying to climb the ranks!
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Study Tips Section -->
+            <div class="tips-section" style="margin-top: 2rem;">
+                <div class="dashboard-top">
+                    <div class="island" style="flex: 1;">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Study Tips</h3>
+                        <div class="tips-list">
+                            <div class="tip-item" style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+                                <span class="material-symbols-outlined" style="color: var(--primary); margin-top: 0.25rem;">lightbulb</span>
+                                <div>
+                                    <div style="font-weight: 500; color: var(--text-primary); margin-bottom: 0.25rem;">Consistent Practice</div>
+                                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Regular study sessions yield better results than cramming.</div>
+                                </div>
+                            </div>
+                            <div class="tip-item" style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+                                <span class="material-symbols-outlined" style="color: var(--primary); margin-top: 0.25rem;">psychology</span>
+                                <div>
+                                    <div style="font-weight: 500; color: var(--text-primary); margin-bottom: 0.25rem;">Active Learning</div>
+                                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Teaching others or explaining concepts helps retention.</div>
+                                </div>
+                            </div>
+                            <div class="tip-item" style="display: flex; align-items: flex-start; gap: 1rem;">
+                                <span class="material-symbols-outlined" style="color: var(--primary); margin-top: 0.25rem;">schedule</span>
+                                <div>
+                                    <div style="font-weight: 500; color: var(--text-primary); margin-bottom: 0.25rem;">Study Planning</div>
+                                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Set achievable goals and track your progress regularly.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const html = document.documentElement;
+                    const currentTheme = html.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+                    html.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                });
+            }
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            // Set progress bar widths
+            const progressFills = document.querySelectorAll('.progress-fill');
+            progressFills.forEach(fill => {
+                const progress = fill.getAttribute('data-progress');
+                if (progress) {
+                    fill.style.width = progress + '%';
+                }
+            });
+        });
+    </script>
+
+    <style>
+        .main-header {
+            margin-bottom: 2rem;
+        }
+
+        .main-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .main-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .rank-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rank-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .rank-badge {
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-stats {
+            position: relative;
+            z-index: 1;
+        }
+
+        .leaderboard-section {
+            box-shadow: var(--shadow);
+        }
+
+        .leaderboard-header {
+            background: var(--bg-secondary);
+        }
+
+        .leaderboard-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            transition: background-color 0.2s ease;
+        }
+
+        .leaderboard-item:hover {
+            background: var(--bg-hover) !important;
+        }
+
+        .leaderboard-item.current-user {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--primary);
+        }
+
+        .rank-column {
+            width: 60px;
+            text-align: center;
+        }
+
+        .rank-badge, .rank-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            min-height: 40px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .rank-badge.rank-1 {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+        }
+
+        .rank-badge.rank-2 {
+            background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+            color: #000;
+        }
+
+        .rank-badge.rank-3 {
+            background: linear-gradient(135deg, #CD7F32, #A0522D);
+            color: #fff;
+        }
+
+        .rank-number {
+            color: var(--text-secondary);
+            border: none;
+            background: transparent;
+        }
+
+        .user-column {
+            flex: 1;
+            margin-left: 1rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .current-user-indicator {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .user-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-column {
+            width: 150px;
+            text-align: center;
+        }
+
+        .progress-score {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .progress-bar {
+            width: 100px;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .chapters-column {
+            width: 120px;
+            text-align: center;
+        }
+
+        .chapters-completed {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .chapters-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .tips-section .island {
+            padding: 2rem;
+        }
+
+        .tips-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .tips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .tip-item {
+            transition: transform 0.2s ease;
+        }
+
+        .tip-item:hover {
+            transform: translateX(4px);
+        }
+
+        .tip-item .material-symbols-outlined {
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-header h1 {
+                font-size: 2rem;
+            }
+
+            .leaderboard-item {
+                padding: 1rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .rank-column {
+                width: auto;
+            }
+
+            .progress-column, .chapters-column {
+                width: auto;
+                text-align: left;
+            }
+
+            .user-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .rank-card {
+                padding: 1.5rem;
+            }
+
+            .leaderboard-header, .leaderboard-item {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
+    </style>
+
+</body>
+</html>

@@ -114,6 +114,8 @@
                                     }} · Code: <strong>{{ cls.get('invite_code', 'N/A') }}</strong></div>
                             </div>
                             <div class="study-item-actions">
+                                <a href="{{ url_for('institution_teacher_upload_file', class_id=cls.id) }}"
+                                    class="btn btn-small btn-primary">Upload Files</a>
                                 <a href="{{ url_for('manage_class_syllabus', class_id=cls.id) }}"
                                     class="btn btn-small btn-secondary">Syllabus</a>
                             </div>

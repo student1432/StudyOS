@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Files | {{ class_name }} | StudyOS</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        {% include '_teacher_sidebar.html' %}
+
+        <main class="main-content">
+            <div class="content-header">
+                <h1>Upload Files to {{ class_name }}</h1>
+                <p>Share notes and materials with your students</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <div class="study-island">
+                <div class="study-island-header">
+                    <h3>Upload New File</h3>
+                </div>
+                <form method="POST" enctype="multipart/form-data" style="margin-top:16px;">
+                    <div style="margin-bottom:16px;">
+                        <label for="file" style="display:block; margin-bottom:8px; font-weight:500;">Select File</label>
+                        <input type="file" id="file" name="file" required
+                               style="width:100%; padding:12px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary);">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;">Upload File</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            const root = document.documentElement;
+            const savedTheme = localStorage.getItem("sclera-theme");
+            if (savedTheme) root.setAttribute("data-theme", savedTheme);
+        })();
+    </script>
+</body>
+
+</html>

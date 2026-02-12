@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Bubbles - {{ name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+</head>
+<body>
+    {% include '_sidebar.html' %}
+
+    <main class="main-content">
+        <div class="dashboard-layout">
+            <div class="main-header">
+                <h1>Study Bubbles</h1>
+                <p>Connect with study groups and collaborate with peers</p>
+            </div>
+
+            <!-- Create Bubble Button -->
+            <div class="header-actions">
+                <button class="btn create-bubble-btn" onclick="showCreateBubbleModal()">
+                    <span class="material-symbols-outlined" style="margin-right: 8px;">add</span>
+                    Create Study Bubble
+                </button>
+            </div>
+
+            <!-- My Bubbles Section -->
+            {% if my_bubbles %}
+            <div class="section">
+                <h2>My Study Bubbles</h2>
+                <div class="bubbles-grid">
+                    {% for bubble in my_bubbles %}
+                    <div class="island bubble-card">
+                        <div class="bubble-header">
+                            <h3>{{ bubble.name }}</h3>
+                            <div class="bubble-stats">
+                                <span class="member-count">
+                                    <span class="material-symbols-outlined">group</span>
+                                    {{ bubble.member_count }} members
+                                </span>
+                            </div>
+                        </div>
+                        {% if bubble.description %}
+                        <p class="bubble-description">{{ bubble.description }}</p>
+                        {% endif %}
+                        <div class="bubble-actions">
+                            <button class="btn btn-secondary" onclick="showInviteCode('{{ bubble.invite_code }}')">
+                                <span class="material-symbols-outlined">share</span>
+                                Invite Code
+                            </button>
+                            <button class="btn" onclick="manageBubble('{{ bubble.id }}')">
+                                <span class="material-symbols-outlined">settings</span>
+                                Manage
+                            </button>
+                        </div>
+                        <div class="bubble-meta">
+                            Created {{ bubble.created_at[:10] if bubble.created_at else 'recently' }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Available Bubbles Section -->
+            {% if available_bubbles %}
+            <div class="section">
+                <h2>Available Study Bubbles</h2>
+                <div class="bubbles-grid">
+                    {% for bubble in available_bubbles %}
+                    <div class="island bubble-card">
+                        <div class="bubble-header">
+                            <h3>{{ bubble.name }}</h3>
+                            <div class="bubble-stats">
+                                <span class="member-count">
+                                    <span class="material-symbols-outlined">group</span>
+                                    {{ bubble.member_count }} members
+                                </span>
+                            </div>
+                        </div>
+                        {% if bubble.description %}
+                        <p class="bubble-description">{{ bubble.description }}</p>
+                        {% endif %}
+                        <div class="bubble-actions">
+                            <button class="btn" onclick="joinBubble('{{ bubble.id }}')">
+                                <span class="material-symbols-outlined">person_add</span>
+                                Join Bubble
+                            </button>
+                            <button class="btn btn-secondary" onclick="showBubbleDetails('{{ bubble.id }}')">
+                                <span class="material-symbols-outlined">info</span>
+                                Details
+                            </button>
+                        </div>
+                        <div class="bubble-meta">
+                            Created {{ bubble.created_at[:10] if bubble.created_at else 'recently' }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Join by Code Section -->
+            <div class="section">
+                <h2>Join by Invite Code</h2>
+                <div class="island">
+                    <div class="join-code-form">
+                        <p>Have an invite code? Join a private study bubble:</p>
+                        <div style="display: flex; gap: 12px; margin-top: 16px;">
+                            <input type="text" id="inviteCode" placeholder="Enter invite code" style="flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--text-primary);">
+                            <button class="btn" onclick="joinByCode()">
+                                <span class="material-symbols-outlined">login</span>
+                                Join
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="section">
+                <div class="dashboard-top">
+                    <div class="island">
+                        <h3>Bubble Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">{{ my_bubbles|length }}</div>
+                                <div class="stat-label">My Bubbles</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{ total_bubbles }}</div>
+                                <div class="stat-label">Total Bubbles</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{ available_bubbles|length }}</div>
+                                <div class="stat-label">Available</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const html = document.documentElement;
+                    const currentTheme = html.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+                    html.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                });
+            }
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        });
+
+        // Bubble management functions
+        function showCreateBubbleModal() {
+            // Simple modal for bubble creation
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+
+            modal.innerHTML = `
+                <div style="background: var(--surface); padding: 2rem; border-radius: 1rem; max-width: 500px; width: 90%; color: var(--text-primary);">
+                    <h3 style="margin-bottom: 1rem;">Create Study Bubble</h3>
+                    <form id="createBubbleForm">
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem;">Bubble Name</label>
+                            <input type="text" id="bubbleName" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--background); color: var(--text-primary);" placeholder="e.g., Math Study Group">
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem;">Description (Optional)</label>
+                            <textarea id="bubbleDescription" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--background); color: var(--text-primary); min-height: 80px;" placeholder="Describe your study bubble..."></textarea>
+                        </div>
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="button" onclick="this.closest('div').parentElement.remove()" style="background: var(--text-muted); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">Cancel</button>
+                            <button type="submit" style="background: var(--primary); color: black; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">Create Bubble</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Handle form submission
+            const form = modal.querySelector('#createBubbleForm');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = modal.querySelector('#bubbleName').value.trim();
+                const description = modal.querySelector('#bubbleDescription').value.trim();
+
+                if (!name) {
+                    showToast('Bubble name is required', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/bubbles/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: name,
+                            description: description,
+                            settings: {
+                                require_consent: true,
+                                leaderboard_enabled: true
+                            }
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast('Study bubble created successfully!', 'success');
+                        modal.remove();
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showToast(data.error || 'Failed to create bubble', 'error');
+                    }
+                } catch (error) {
+                    console.error('Create bubble error:', error);
+                    showToast('Failed to create bubble', 'error');
+                }
+            });
+        }
+
+        function showInviteCode(code) {
+            // Copy invite code to clipboard
+            navigator.clipboard.writeText(code).then(() => {
+                showToast(`Invite code copied: ${code}`, 'success');
+            }).catch(() => {
+                showToast(`Invite code: ${code}`, 'info');
+            });
+        }
+
+        function manageBubble(bubbleId) {
+            // TODO: Implement bubble management
+            showToast('Bubble management coming soon!', 'info');
+        }
+
+        function joinBubble(bubbleId) {
+            // TODO: Implement bubble joining
+            showToast('Bubble joining coming soon!', 'info');
+        }
+
+        function showBubbleDetails(bubbleId) {
+            // TODO: Show bubble details modal
+            showToast('Bubble details coming soon!', 'info');
+        }
+
+        function joinByCode() {
+            const code = document.getElementById('inviteCode').value.trim();
+            if (!code) {
+                showToast('Please enter an invite code', 'error');
+                return;
+            }
+            // TODO: Implement join by code
+            showToast('Join by code coming soon!', 'info');
+        }
+
+        function showToast(message, type) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--info)'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 0.5rem;
+                z-index: 1000;
+                font-weight: 500;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+
+    <style>
+        .main-header {
+            margin-bottom: 2rem;
+        }
+
+        .main-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .main-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .header-actions {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .bubbles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .bubble-card {
+            transition: all var(--transition) ease;
+        }
+
+        .bubble-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .bubble-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .bubble-header h3 {
+            font-size: 1.3rem;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .bubble-stats {
+            display: flex;
+            gap: 12px;
+        }
+
+        .member-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .bubble-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .bubble-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .bubble-actions .btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .bubble-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            padding-top: 0.75rem;
+        }
+
+        .join-code-form {
+            max-width: 500px;
+        }
+
+        .join-code-form p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .bubbles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bubble-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .bubble-actions {
+                flex-direction: column;
+            }
+
+            .header-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+
+</body>
+</html>

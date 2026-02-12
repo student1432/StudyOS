@@ -7,7 +7,7 @@
             <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse sidebar">
                 <span class="material-symbols-outlined">chevron_left</span>
             </button>
-            <a href="{{ url_for('profile_resume') }}" class="sidebar-user-link">{{ name or (user.get('name') if user else None) or 'Student' }}</a>
+            <a href="{{ url_for('profile_dashboard') }}" class="sidebar-user-link">{{ name or (user.get('name') if user else None) or 'Student' }}</a>
         </div>
     </div>
     <nav class="sidebar-nav">
@@ -26,13 +26,17 @@
             class="nav-item {% if p.startswith('/master-library') %}active{% endif %}">Master Library</a>
         <a href="{{ url_for('statistics_dashboard') }}"
             class="nav-item {% if p.startswith('/statistics') %}active{% endif %}">Statistics</a>
+        <a href="{{ url_for('community_dashboard') }}"
+            class="nav-item {% if p.startswith('/community') %}active{% endif %}">Community</a>
+        <a href="{{ url_for('student_files') }}" class="nav-item {% if p.startswith('/student') %}active{% endif %}">Class Files</a>
     </nav>
     <div class="sidebar-footer">
         <a id="themeToggle" class="nav-item" style="cursor:pointer;">
             Toggle theme
         </a>
         <a href="{{ url_for('student_join_class') }}" class="nav-item">Join Class</a>
-            <a href="{{ url_for('settings') }}" class="nav-item">Settings</a>
+        
+        <a href="{{ url_for('settings') }}" class="nav-item">Settings</a>
         <a href="{{ url_for('contact') }}" class="nav-item">Contact</a>
         <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
     </div>
