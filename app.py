@@ -2679,6 +2679,7 @@ def get_connections():
     except Exception as e:
         logger.error(f"Get connections error: {str(e)}")
         return jsonify({'error': 'Failed to get connections', 'details': str(e)}), 500
+@app.route('/profile/resume')
 @require_login
 def profile_resume():
     uid = session['uid']
