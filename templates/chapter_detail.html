@@ -1,69 +1,111 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ chapter_name }} — Sclera</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+
 <body>
-<div class="dashboard-layout">
+    <div class="dashboard-layout">
 
-    <main class="main-content">
-        <div class="detail-header">
-            <button onclick="history.back()" class="btn btn-secondary back-btn">← Back</button>
-            <div class="breadcrumb">
-                <a href="{{ url_for('academic_dashboard') }}">Academic</a>
-                <span class="breadcrumb-separator">/</span>
-                <span style="color:var(--text-muted);">{{ subject_name }}</span>
-                <span class="breadcrumb-separator">/</span>
-                <span>{{ chapter_name }}</span>
+        <main class="main-content">
+            <div class="detail-header">
+                <button onclick="history.back()" class="btn btn-secondary back-btn">← Back</button>
+                <div class="breadcrumb">
+                    <a href="{{ url_for('academic_dashboard') }}">Academic</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span style="color:var(--text-muted);">{{ subject_name }}</span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span>{{ chapter_name }}</span>
+                </div>
             </div>
-        </div>
 
-        {% if topics %}
+            {% if topics %}
             {% for topic in topics %}
             <div class="topic-detail">
                 <div class="topic-header">
                     <h2>{{ topic.name }}</h2>
                 </div>
                 <div class="topic-overview">
+                    <h3>Overview</h3>
                     <p>{{ topic.overview }}</p>
                 </div>
 
-                {% if topic.resources %}
-                    {% if topic.resources.videos %}
-                    <div class="resources-section">
-                        <h4>Videos</h4>
-                        <ul class="resource-list">
-                            {% for v in topic.resources.videos %}
-                            <li><a href="{{ v }}" target="_blank">{{ v }}</a></li>
-                            {% endfor %}
-                        </ul>
+                {% if topic.get('explanations') %}
+                <div class="topic-section">
+                    <h3>Detailed Explanation</h3>
+                    <div class="explanation-content">
+                        {% for explanation in topic.get('explanations') %}
+                        <p>{{ explanation }}</p>
+                        {% endfor %}
                     </div>
-                    {% endif %}
+                </div>
+                {% endif %}
 
-                    {% if topic.resources.pdfs %}
-                    <div class="resources-section">
-                        <h4>PDFs</h4>
-                        <ul class="resource-list">
-                            {% for p in topic.resources.pdfs %}
-                            <li><a href="{{ p }}" target="_blank">{{ p }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
+                {% if topic.get('key_points') %}
+                <div class="topic-section key-points">
+                    <h3>Key Points</h3>
+                    <ul class="key-points-list">
+                        {% for point in topic.get('key_points') %}
+                        <li>{{ point }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
 
-                    {% if topic.resources.practice %}
-                    <div class="resources-section">
-                        <h4>Practice</h4>
-                        <ul class="resource-list">
-                            {% for pr in topic.resources.practice %}
-                            <li>{{ pr }}</li>
-                            {% endfor %}
-                        </ul>
+                {% if topic.get('images') %}
+                <div class="topic-section images">
+                    <h3>Diagrams & Illustrations</h3>
+                    <div class="image-gallery">
+                        {% for img in topic.get('images') %}
+                        <div class="image-container">
+                            <img src="{{ img.url }}" alt="{{ img.caption }}" loading="lazy">
+                            {% if img.caption %}
+                            <p class="image-caption">{{ img.caption }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if topic.get('resources') %}
+                {% set resources = topic.get('resources') %}
+                {% if resources.get('videos') %}
+                <div class="resources-section">
+                    <h4>Videos</h4>
+                    <ul class="resource-list">
+                        {% for v in resources.get('videos') %}
+                        <li><a href="{{ v }}" target="_blank">{{ v }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if resources.get('pdfs') %}
+                <div class="resources-section">
+                    <h4>PDFs</h4>
+                    <ul class="resource-list">
+                        {% for p in resources.get('pdfs') %}
+                        <li><a href="{{ p }}" target="_blank">{{ p }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if resources.get('practice') %}
+                <div class="resources-section">
+                    <h4>Practice</h4>
+                    <ul class="resource-list">
+                        {% for pr in resources.get('practice') %}
+                        <li>{{ pr }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
                 {% endif %}
             </div>
 
@@ -82,36 +124,37 @@
                     </button>
                 </form>
             </div>
-        {% else %}
-        <div class="empty-state">
-            <h3>No Topics Available</h3>
-            <p>Topic content is being prepared.</p>
-        </div>
-        {% endif %}
-    </main>
-</div>
-<script>
-(function () {
-    const root = document.documentElement;
-    const toggle = document.getElementById("themeToggle");
+            {% else %}
+            <div class="empty-state">
+                <h3>No Topics Available</h3>
+                <p>Topic content is being prepared.</p>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+    <script>
+        (function () {
+            const root = document.documentElement;
+            const toggle = document.getElementById("themeToggle");
 
-    const savedTheme = localStorage.getItem("sclera-theme");
-    if (savedTheme) {
-        root.setAttribute("data-theme", savedTheme);
-    }
+            const savedTheme = localStorage.getItem("sclera-theme");
+            if (savedTheme) {
+                root.setAttribute("data-theme", savedTheme);
+            }
 
-    if (toggle) {
-        toggle.addEventListener("click", () => {
-            const next =
-                root.getAttribute("data-theme") === "dark"
-                ? "light"
-                : "dark";
+            if (toggle) {
+                toggle.addEventListener("click", () => {
+                    const next =
+                        root.getAttribute("data-theme") === "dark"
+                            ? "light"
+                            : "dark";
 
-            root.setAttribute("data-theme", next);
-            localStorage.setItem("sclera-theme", next);
-        });
-    }
-})();
-</script>
+                    root.setAttribute("data-theme", next);
+                    localStorage.setItem("sclera-theme", next);
+                });
+            }
+        })();
+    </script>
 </body>
+
 </html>

@@ -42,6 +42,10 @@
                         <button id="add15Btn">+15 min</button>
                         <button id="resetBtn">Reset</button>
                     </div>
+
+                    <div class="session-controls">
+                        <button id="sessionBtn" class="session-start">Start Session</button>
+                    </div>
                 </div>
 
                 <!-- TODO LIST -->
@@ -51,7 +55,7 @@
 
                     <form id="todoForm">
                         <input type="text" id="todoInput" placeholder="Add a study task…" required>
-                        <button id="add_button" type="submit">Add</button>
+                        <button id="add_button" class="btn btn-small btn-primary" type="submit">+</button>
                     </form>
 
                     <div class="todo-list">
@@ -77,9 +81,11 @@
         let remaining = totalSeconds;
         let interval = null;
         let running = false;
+        let sessionActive = false;
 
         const display = document.getElementById('timeDisplay');
         const progress = document.querySelector('.donut-progress');
+        const sessionBtn = document.getElementById('sessionBtn');
 
         function format(sec) {
             const m = Math.floor(sec / 60);
@@ -101,19 +107,22 @@
                 remaining--;
                 render();
 
-                const now = new Date();
-                const localHour = now.getHours();
-                const localWeekday = (now.getDay() + 6) % 7; // ISO: 0=Mon, 6=Sun
+                // Only log study time if session is active
+                if (sessionActive) {
+                    const now = new Date();
+                    const localHour = now.getHours();
+                    const localWeekday = (now.getDay() + 6) % 7; // ISO: 0=Mon, 6=Sun
 
-                fetch('/study-mode/time', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        seconds: 1,
-                        local_hour: localHour,
-                        local_weekday: localWeekday
-                    })
-                });
+                    fetch('/study-mode/time', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            seconds: 1,
+                            local_hour: localHour,
+                            local_weekday: localWeekday
+                        })
+                    });
+                }
 
                 if (remaining <= 0) {
                     clearInterval(interval);
@@ -135,6 +144,21 @@
             totalSeconds = 25 * 60;
             remaining = totalSeconds;
             render();
+        };
+
+        // Session button logic
+        sessionBtn.onclick = () => {
+            if (sessionActive) {
+                // End session
+                sessionActive = false;
+                sessionBtn.textContent = 'Start Session';
+                sessionBtn.className = 'session-start';
+            } else {
+                // Start session
+                sessionActive = true;
+                sessionBtn.textContent = 'End Session';
+                sessionBtn.className = 'session-end';
+            }
         };
 
         document.getElementById('add5Btn').onclick = () => {
@@ -183,29 +207,6 @@
                     });
             };
         });
-    </script>
-    <script>
-        (function () {
-            const root = document.documentElement;
-            const toggle = document.getElementById("themeToggle");
-
-            const savedTheme = localStorage.getItem("sclera-theme");
-            if (savedTheme) {
-                root.setAttribute("data-theme", savedTheme);
-            }
-
-            if (toggle) {
-                toggle.addEventListener("click", () => {
-                    const next =
-                        root.getAttribute("data-theme") === "dark"
-                            ? "light"
-                            : "dark";
-
-                    root.setAttribute("data-theme", next);
-                    localStorage.setItem("sclera-theme", next);
-                });
-            }
-        })();
     </script>
     {% include 'notifications_snippet.html' %}
 </body>

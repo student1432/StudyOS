@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 from config import config
 from utils import logger
+# Import will be done in __init__ to handle errors gracefully
 # Remove global Firebase client - will be initialized when needed
 
 class AIAssistant:
@@ -16,26 +17,154 @@ class AIAssistant:
     def __init__(self):
         """Initialize AI Assistant with Gemini API"""
         self.ai_available = False
+        self.model = None
+        self.genai = None
+        self.error_message = None
+        self.model_name = None
+        
         try:
-            import google.generativeai as genai
+            # Check if API key is set
             api_key = os.getenv('GEMINI_API_KEY')
-            if not api_key:
-                logger.warning("GEMINI_API_KEY not found in environment variables - using mock responses")
-                self.ai_available = False
+            if not api_key or not api_key.strip():
+                self.error_message = "GEMINI_API_KEY environment variable is not set or is empty"
+                logger.error(self.error_message)
+                print(f"AI INIT ERROR: {self.error_message}")
+                return
+                
+            # Set the API key in the environment
+            os.environ['GOOGLE_API_KEY'] = api_key.strip()
+            
+            # Import the Google Generative AI package
+            try:
+                import google.generativeai as genai
+                self.genai = genai
+                logger.info("Successfully imported google.generativeai")
+            except ImportError as e:
+                self.error_message = "Required package not installed. Please run: pip install google-genai"
+                logger.error(f"{self.error_message}: {str(e)}")
+                print(f"AI IMPORT ERROR: {self.error_message}")
+                return
+            
+            # Configure the API
+            try:
+                genai.configure(api_key=api_key.strip())
+                logger.info("Successfully configured Gemini API")
+            except Exception as e:
+                self.error_message = f"Failed to configure Gemini API: {str(e)}"
+                logger.error(self.error_message, exc_info=True)
+                print(f"AI CONFIG ERROR: {self.error_message}")
                 return
 
-            genai.configure(api_key=api_key)
-            self.genai = genai
-            self.model = genai.GenerativeModel('gemini-flash-latest')
-            self.ai_available = True
-            logger.info("AI Assistant initialized successfully with Gemini API")
-
-        except ImportError as e:
-            logger.warning(f"Google Generative AI package not installed: {e} - using mock responses")
-            self.ai_available = False
+            try:
+                # Try to list models, but don't fail if it's not available
+                try:
+                    available_models = genai.list_models()
+                    logger.info("Successfully connected to Gemini API")
+                    logger.info(f"Available models: {[m.name for m in available_models]}")
+                except AttributeError:
+                    logger.warning("list_models() not available in this version of google-genai")
+                    # Use known working models
+                    model_names = [
+                        'models/gemini-2.5-flash',
+                        'models/gemini-2.5-pro',
+                        'models/gemini-2.0-flash',
+                        'models/gemini-flash-latest'
+                    ]
+                    logger.info(f"Using default models: {model_names}")
+                
+                # Set the API key in the environment for future use
+                os.environ['GOOGLE_API_KEY'] = api_key.strip()
+                logger.info("Successfully configured Gemini API")
+            except Exception as e:
+                self.error_message = f"Failed to configure Gemini API: {str(e)}"
+                logger.error(self.error_message, exc_info=True)
+                print(f"AI CONFIG ERROR: {self.error_message}")
+                return  # Properly return None from __init__
+            
+            # Define the models to try in order of preference
+            model_names = [
+                'models/gemini-2.5-flash',  # Latest and most capable model
+                'models/gemini-2.5-pro',    # Alternative model
+                'models/gemini-2.0-flash',  # Fallback model
+                'models/gemini-flash-latest'  # Always points to latest flash model
+            ]
+            
+            # Log the models we'll try to use
+            logger.info(f"Will try to initialize with models: {model_names}")
+            
+            # Check if we have any models to try
+            if not model_names:
+                self.error_message = "No models available to initialize"
+                logger.error(self.error_message)
+                return
+            
+            for model_name in model_names:
+                try:
+                    logger.info(f"Attempting to initialize model: {model_name}")
+                    
+                    try:
+                        # Initialize the model with default settings first
+                        logger.info(f"Initializing model: {model_name}")
+                        
+                        # Try with minimal configuration first
+                        self.model = genai.GenerativeModel(model_name=model_name)
+                        
+                        # Test the connection with a simple prompt
+                        logger.info("Testing model with a simple prompt...")
+                        chat = self.model.start_chat(history=[])
+                        response = chat.send_message(
+                            "Hello, please respond with 'Ready' if you can hear me.",
+                            stream=False
+                        )
+                        
+                        # If we get here, the model is working
+                        logger.info(f"Successfully initialized model: {model_name}")
+                        
+                    except Exception as model_error:
+                        error_msg = f"Failed to initialize model {model_name}: {str(model_error)}"
+                        logger.error(error_msg)
+                        continue  # Try the next model
+                    
+                    if response and hasattr(response, 'text'):
+                        logger.info(f"Successfully initialized with model: {model_name}")
+                        logger.info(f"Model response: {response.text}")
+                        print(f"AI SUCCESS: Initialized with model {model_name}")
+                        self.ai_available = True
+                        self.model_name = model_name
+                        self.chat = chat  # Store chat session for future use
+                        return  # Properly return None from __init__
+                    
+                    logger.warning(f"Model {model_name} responded with empty content")
+                    self.error_message = f"Model {model_name} returned empty response"
+                        
+                except Exception as model_error:
+                    import traceback
+                    error_details = str(model_error)
+                    error_trace = traceback.format_exc()
+                    logger.error(f"Failed to initialize model {model_name}: {error_details}")
+                    logger.error(f"Error trace: {error_trace}")
+                    print(f"MODEL ERROR ({model_name}): {error_details[:200]}")
+                    print(f"Full error available in logs")
+                    continue
+            
+            # If we get here, no models worked
+            self.error_message = (
+                "Failed to initialize any available Gemini model. "
+                "Please check your API key and internet connection. "
+                "Make sure your API key has access to the Gemini API."
+            )
+            logger.error(self.error_message)
+            print(f"AI MODEL ERROR: {self.error_message}")
+            # No return needed here - just let the function end naturally
+            
         except Exception as e:
-            logger.error(f"Failed to initialize Gemini API: {str(e)} - using mock responses")
-            self.ai_available = False
+            self.error_message = f"Unexpected error during initialization: {str(e)}"
+            logger.error(self.error_message)
+            print(f"AI INIT ERROR: {self.error_message}")
+            import traceback
+            traceback.print_exc()
+            
+        self.ai_available = False
 
     def _get_db(self):
         """Get Firebase Firestore client - import from already initialized firebase_config"""
@@ -407,35 +536,7 @@ class AIAssistant:
             logger.error(f"Error renaming thread: {str(e)}", exc_info=True)
             return False
 
-def delete_thread(self, uid: str, chatbot_type: str, thread_id: str) -> bool:
-    """Delete a conversation thread"""
-    try:
-        # Don't allow deletion of active thread
-        active_thread_id = self.get_active_thread_id(uid, chatbot_type)
-        if active_thread_id == thread_id:
-            logger.warning(f"Cannot delete active thread {thread_id}")
-            return False
 
-        # Delete thread document and all its messages
-        thread_ref = self._get_db().collection('users').document(uid).collection('ai_conversations').document(f'{chatbot_type}_{thread_id}')
-
-        # Delete all messages first
-        messages_ref = thread_ref.collection('messages')
-        from firebase_admin import firestore
-        batch = self._get_db().batch()
-        for msg_doc in messages_ref.stream():
-            batch.delete(msg_doc.reference)
-
-        # Delete thread document
-        batch.delete(thread_ref)
-        batch.commit()
-
-        logger.info(f"Deleted thread {thread_id} for {chatbot_type}")
-        return True
-
-    except Exception as e:
-        logger.error(f"Error deleting thread: {str(e)}", exc_info=True)
-        return False
 
     def format_sclera_thread_as_text(self, thread_data: dict, messages: list) -> str:
         """Format sclera thread as plain text"""
@@ -473,42 +574,68 @@ def delete_thread(self, uid: str, chatbot_type: str, thread_id: str) -> bool:
         return "\n".join(lines)
 
     def generate_planning_response(self, message: str, context: Dict[str, Any]) -> str:
-        """Generate a planning-focused response using Gemini AI or fallback"""
-        if not self.ai_available:
-            logger.info("AI not available, using intelligent fallback for planning")
-            return self._generate_smart_planning_fallback(message, context)
-
+        """Generate a response for academic planning queries"""
         try:
+            if not self.ai_available or not hasattr(self, 'model') or not self.model:
+                error_msg = "AI Assistant is not properly initialized. "
+                if hasattr(self, 'error_message'):
+                    error_msg += f"Error: {self.error_message}"
+                logger.error(error_msg)
+                return "I'm sorry, but the AI Assistant is currently unavailable. Please try again later."
+            
+            # Create a prompt with context
             prompt = self._build_planning_prompt(message, context)
+            
+            # Generate response
             response = self.model.generate_content(prompt)
-            ai_response = response.text.strip()
-
-            logger.info("Planning response generated successfully with AI")
-            return ai_response
-
+            
+            # Process and return the response
+            if hasattr(response, 'text') and response.text.strip():
+                return response.text.strip()
+            else:
+                logger.warning("Received empty response from model")
+                return "I didn't receive a valid response. Could you please rephrase your question?"
+                
         except Exception as e:
-            logger.error(f"Planning response generation error: {str(e)}", exc_info=True)
-            # Fallback to smart response when AI fails
-            return self._generate_smart_planning_fallback(message, context)
-
+            error_msg = f"Error in generate_planning_response: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return (
+                "I encountered an unexpected error while processing your request. "
+                "The issue has been logged and will be investigated. "
+                "Please try again later or contact support if the problem persists."
+            )
+            
     def generate_doubt_response(self, message: str, context: Dict[str, Any]) -> str:
-        """Generate a doubt-resolution response using Gemini AI or fallback"""
-        if not self.ai_available:
-            logger.info("AI not available, using intelligent fallback for doubt resolution")
-            return self._generate_smart_doubt_fallback(message, context)
-
+        """Generate a response for doubt resolution"""
         try:
+            if not self.ai_available or not hasattr(self, 'model') or not self.model:
+                error_msg = "AI Assistant is not properly initialized. "
+                if hasattr(self, 'error_message'):
+                    error_msg += f"Error: {self.error_message}"
+                logger.error(error_msg)
+                return "I'm sorry, but the AI Assistant is currently unavailable. Please try again later."
+            
+            # Create a prompt with context
             prompt = self._build_doubt_prompt(message, context)
+            
+            # Generate response
             response = self.model.generate_content(prompt)
-            ai_response = response.text.strip()
-
-            logger.info("Doubt response generated successfully with AI")
-            return ai_response
-
+            
+            # Process and return the response
+            if hasattr(response, 'text') and response.text.strip():
+                return response.text.strip()
+            else:
+                logger.warning("Received empty response from model")
+                return "I didn't receive a valid response. Could you please rephrase your question?"
+                
         except Exception as e:
-            logger.error(f"Doubt response generation error: {str(e)}", exc_info=True)
-            # Fallback to smart response when AI fails
-            return self._generate_smart_doubt_fallback(message, context)
+            error_msg = f"Error in generate_doubt_response: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return (
+                "I encountered an unexpected error while processing your doubt. "
+                "The issue has been logged and will be investigated. "
+                "Please try again later or contact support if the problem persists."
+            )
 
     def _generate_smart_planning_fallback(self, message: str, context: Dict[str, Any]) -> str:
         """Generate an intelligent planning response without AI"""

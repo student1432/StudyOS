@@ -3792,16 +3792,27 @@ def study_time():
     seconds = int(data.get('seconds', 0))
     local_hour = data.get('local_hour')
     local_weekday = data.get('local_weekday')
+    session_break = data.get('session_break', False)
+
+    # Get user data for timezone conversion
+    user_data = get_user_data(uid)
+
     db.collection('users').document(uid).set({
         'study_mode': {'total_seconds': Increment(seconds)}
     }, merge=True)
+
     # Record/Update session for heatmap
     # Using YYYY-MM-DD-HH as a unique key for the hour to avoid document spam
     now = datetime.utcnow()
     hour_id = now.strftime("%Y-%m-%d-%H")
+
+    # If session_break is True, create a unique session by adding timestamp
+    if session_break:
+        hour_id = f"{hour_id}-{int(now.timestamp())}"
+
     session_ref = db.collection('users').document(uid).collection('study_sessions').document(hour_id)
     session_data = {
-        'start_time': now.isoformat(),
+        'start_time': get_current_time_for_user(user_data),  # Use user's timezone
         'duration_seconds': firestore.Increment(seconds),
         'last_updated': now.isoformat()
     }
@@ -4951,6 +4962,79 @@ def get_sclera_threads(mode):
         logger.error(f"SCLERA get threads error: {str(e)}")
         return jsonify({'threads': [], 'active_thread_id': None, 'error': str(e)}), 500
 
+@app.route('/api/test/gemini', methods=['GET'])
+def test_gemini():
+    """Test endpoint to list all available Gemini models"""
+    try:
+        import google.generativeai as genai
+        
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'GEMINI_API_KEY environment variable is not set',
+                'api_key_set': False
+            }), 500
+            
+        # Configure with just the API key
+        genai.configure(api_key=api_key)
+        
+        try:
+            # Get all available models
+            models = genai.list_models()
+            
+            # Get detailed information about each model
+            model_info = []
+            for model in models:
+                try:
+                    # Test if model supports generateContent
+                    try:
+                        test_model = genai.GenerativeModel(model.name)
+                        response = test_model.generate_content("Test", stream=False)
+                        supports_generate = True
+                    except:
+                        supports_generate = False
+                        
+                    model_info.append({
+                        'name': model.name,
+                        'display_name': getattr(model, 'display_name', 'N/A'),
+                        'description': getattr(model, 'description', 'N/A'),
+                        'input_token_limit': getattr(model, 'input_token_limit', 'N/A'),
+                        'output_token_limit': getattr(model, 'output_token_limit', 'N/A'),
+                        'supported_generation_methods': getattr(model, 'supported_generation_methods', []),
+                        'supports_generate_content': supports_generate
+                    })
+                except Exception as e:
+                    model_info.append({
+                        'name': str(model),
+                        'error': f"Could not get model info: {str(e)}"
+                    })
+            
+            return jsonify({
+                'status': 'success',
+                'api_key_set': True,
+                'api_key_prefix': api_key[:5] + '...' + api_key[-4:] if api_key else None,
+                'available_models': model_info,
+                'model_count': len(model_info)
+            })
+            
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': f'Failed to list models: {str(e)}',
+                'api_key_set': True,
+                'api_key_prefix': api_key[:5] + '...' + api_key[-4:] if api_key else None,
+                'error_type': type(e).__name__
+            }), 500
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'api_key_set': 'GEMINI_API_KEY' in os.environ,
+            'api_key_prefix': os.getenv('GEMINI_API_KEY', '')[:5] + '...' + os.getenv('GEMINI_API_KEY', '')[-4:] if os.getenv('GEMINI_API_KEY') else None
+        }), 500
+
 @app.route('/api/sclera/chat/<mode>', methods=['POST'])
 @require_login
 def sclera_chat(mode):
@@ -5038,43 +5122,105 @@ def generate_sclera_response(message, mode, uid):
     """Generate AI response based on mode and context"""
     try:
         # Get AI assistant - now handles missing API gracefully
-        ai_assistant = get_ai_assistant()
+        try:
+            ai_assistant = get_ai_assistant()
+            error_msg = getattr(ai_assistant, 'error_message', None)
+            
+            # Check if AI assistant is available
+            if not hasattr(ai_assistant, 'ai_available') or not ai_assistant.ai_available:
+                if not error_msg:
+                    error_msg = 'AI Assistant is not available. No specific error information was provided.'
+                
+                logger.error(f"AI Assistant not available: {error_msg}")
+                
+                # Provide a more detailed error message to the user
+                return (
+                    "I'm sorry, but the AI Assistant is currently unavailable.\n\n"
+                    f"**Error Details:** {error_msg}\n\n"
+                    "**Possible Solutions:**\n"
+                    "1. Verify that your GEMINI_API_KEY is correctly set and has access to the Gemini API\n"
+                    "2. Check your internet connection\n"
+                    "3. Ensure you have the latest version of the google-generativeai package\n"
+                    "4. Try again in a few moments if the issue is temporary\n\n"
+                    "If the problem persists, please contact support with the error details above."
+                )
+                
+        except Exception as e:
+            error_msg = f"Failed to initialize AI Assistant: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return (
+                "I'm sorry, but the AI Assistant encountered an error during initialization.\n\n"
+                f"**Error Details:** {error_msg}\n\n"
+                "Please check the server logs for more information and contact support if the issue persists."
+            )
 
-        # Get user context
-        user_data = get_user_data(uid)
-        profile = _get_any_profile(uid)
+        try:
+            # Get user context
+            user_data = get_user_data(uid)
+            profile = _get_any_profile(uid)
 
-        # Create context based on mode
-        context = {
-            'user_name': user_data.get('name', 'Student') if user_data else 'Student',
-            'purpose': profile.get('account_type', 'student') if profile else 'student'
-        }
+            # Create context based on mode
+            context = {
+                'user_name': user_data.get('name', 'Student') if user_data else 'Student',
+                'purpose': profile.get('account_type', 'student') if profile else 'student',
+                'mode': mode  # Add mode to context for better model responses
+            }
 
-        # Add academic context
-        academic_context = ai_assistant.get_academic_context(user_data or {})
-        context.update(academic_context)
+            # Add academic context if available
+            try:
+                academic_context = ai_assistant.get_academic_context(user_data or {})
+                context.update(academic_context)
+            except Exception as e:
+                logger.warning(f"Could not load academic context: {str(e)}")
 
-        # Generate response based on mode
-        if mode == 'academic_planner':
-            # Use planning response for academic planner (combines academic + planning)
-            response = ai_assistant.generate_planning_response(message, context)
-        elif mode == 'doubt_solver':
-            response = ai_assistant.generate_doubt_response(message, context)
-        elif mode == 'institutional':
-            # For institutional mode, use planning response with institutional context
-            context['purpose'] = 'institutional'
-            response = ai_assistant.generate_planning_response(message, context)
-        else:
-            # Default to planning response
-            response = ai_assistant.generate_planning_response(message, context)
+            # Generate response based on mode
+            try:
+                if mode == 'academic_planner':
+                    response = ai_assistant.generate_planning_response(message, context)
+                elif mode == 'doubt_solver':
+                    response = ai_assistant.generate_doubt_response(message, context)
+                elif mode == 'institutional':
+                    context['purpose'] = 'institutional'
+                    response = ai_assistant.generate_planning_response(message, context)
+                else:
+                    response = ai_assistant.generate_planning_response(message, context)
 
-        # Format response based on mode
-        if mode == 'institutional':
-            # Ensure institutional responses are well-structured
-            if not any(keyword in response.lower() for keyword in ['analysis', 'assessment', 'recommendations', 'findings']):
-                response = f"Analysis Results:\n\n{response}\n\nStrategic Insights:\n\nBased on your query, the institutional data suggests focused interventions in this area."
+                # Format response based on mode
+                if mode == 'institutional' and not any(keyword in response.lower() for keyword in ['analysis', 'assessment', 'recommendations']):
+                    response = (
+                        f"# Analysis Results\n\n"
+                        f"{response}\n\n"
+                        "## Strategic Insights\n\n"
+                        "Based on your query, the institutional data suggests the following key points:"
+                    )
 
-        return response
+                return response
+                
+            except Exception as e:
+                error_details = f"Error in {mode} response generation: {str(e)}"
+                logger.error(error_details, exc_info=True)
+                return (
+                    f"I encountered an error while generating a response.\n\n"
+                    f"**Error Details:** {error_details}\n\n"
+                    "The error has been logged. Please try again or contact support if the issue persists."
+                )
+
+        except Exception as e:
+            error_details = f"Error processing request: {str(e)}"
+            logger.error(error_details, exc_info=True)
+            return (
+                "An error occurred while processing your request.\n\n"
+                f"**Error Details:** {error_details}\n\n"
+                "Please try again or contact support if the issue persists."
+            )
+            
+    except Exception as e:
+        error_details = f"Unexpected error in generate_sclera_response: {str(e)}"
+        logger.error(error_details, exc_info=True)
+        return (
+            "An unexpected error occurred. The development team has been notified.\n\n"
+            f"**Error:** {error_details}"
+        )
 
     except Exception as e:
         logger.error(f"SCLERA response generation error: {str(e)}")
