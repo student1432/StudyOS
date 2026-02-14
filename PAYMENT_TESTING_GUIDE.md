@@ -1,40 +1,52 @@
-# Testing Guide: Institution Payment Integration
+# Comprehensive Testing Guide: Institutional Payment
 
-This guide provides the steps to verify the payment gateway integration for the Sclera Institutional Module.
+Follow these exact steps to verify the robustness of your new payment implementation.
 
-## Prerequisites
-1.  **Stripe Test Mode:** Ensure your Stripe API keys are in "Test Mode".
-2.  **Test Account:** Use a fresh email address for each signup test.
+---
 
-## Test Scenario 1: New Admin Signup & Payment Redirection
-1.  Navigate to `/signup/admin`.
-2.  Fill out the form and click "Register".
-3.  **Expected Result:** You should be redirected to the `/institution/checkout` page (or directly to Stripe Checkout).
-4.  **Database Check:** Open Firestore and verify that the new institution document has `status: "pending_payment"`.
+## 🛠 Setup for Testing
+1.  **Stripe Keys:** Ensure you are using `sk_test_...` and `pk_test_...`.
+2.  **Price ID:** Create a "Product" in your Stripe Dashboard (Test Mode) and copy the Price ID into your `.env`.
 
-## Test Scenario 2: Accessing Dashboard Without Payment
-1.  While in the `pending_payment` state, try to navigate directly to `/institution/admin/dashboard`.
-2.  **Expected Result:** The system should automatically redirect you back to the checkout page.
+---
 
-## Test Scenario 3: Successful Payment
-1.  On the Stripe Checkout page, use a test card (e.g., `4242 4242 4242 4242`).
-2.  Complete the payment.
-3.  **Expected Result:** You should be redirected to `/institution/payment-success` and then to the Admin Dashboard.
-4.  **Database Check:**
-    *   The institution's `status` should now be `"active"`.
-    *   The `plan` should be `"Premium"`.
-    *   A `payment_id` should be recorded.
+## 🧪 Test Suite
 
-## Test Scenario 4: Failed/Cancelled Payment
-1.  On the Stripe Checkout page, click the "Back" or "Cancel" button.
-2.  **Expected Result:** You should be returned to the Sclera checkout page with an information message (e.g., "Payment cancelled. Please try again to activate your account.").
-3.  **Access Check:** Verify that you still cannot access the Admin Dashboard.
+### 1. The "Gatekeeper" Test
+*   **Action:** Create a new Admin account at `/signup/admin`.
+*   **Verification:**
+    *   [ ] After registration, are you immediately on `/institution/checkout`?
+    *   [ ] Try to manually type `/institution/admin/dashboard` in the URL bar. Do you get redirected back to checkout?
+    *   [ ] In Firestore, does the institution have `status: "pending_payment"`?
 
-## Test Scenario 5: Session Persistence
-1.  Log out and log back in as the Admin who just paid.
-2.  **Expected Result:** You should be taken directly to the Admin Dashboard without seeing the checkout page again.
+### 2. The "Stripe Handshake" Test
+*   **Action:** Click the "Pay Now" button on the checkout page.
+*   **Verification:**
+    *   [ ] Does the browser redirect to `checkout.stripe.com`?
+    *   [ ] Inspect the network tab for the POST to `/api/create-checkout-session`. Does it return a JSON object with a session ID?
 
-## Tools for Verification
-*   **Stripe Dashboard:** Check the "Payments" tab to see successful and failed transactions.
-*   **Firestore Console:** Monitor real-time updates to the `institutions` and `institution_admins` collections.
-*   **Browser Network Tab:** Verify that the API calls to `/api/create-checkout-session` are returning `200 OK` with a valid URL.
+### 3. The "Test Card" Success Test
+*   **Action:** Use card `4242 4242 4242 4242`, any expiry in future, and any CVC.
+*   **Verification:**
+    *   [ ] After clicking "Pay", are you redirected to Sclera's `/institution/payment-success` page?
+    *   [ ] Does the success page show a countdown or redirect you to the dashboard within 5-10 seconds?
+    *   [ ] **Database check:** Does the institution now have `status: "active"`, `plan: "Pro"`, and a `subscription_id`?
+
+### 4. The "Payment Cancelled" Test
+*   **Action:** Start the checkout process, then click the "Back" arrow on the Stripe page.
+*   **Verification:**
+    *   [ ] Are you returned to Sclera's checkout page?
+    *   [ ] Is the institution status still `pending_payment`?
+    *   [ ] Try to access the dashboard again—ensure it's still locked.
+
+### 5. The "Metadata Security" Test
+*   **Action:** Verify that the `institution_id` in Stripe Metadata matches the ID in your Firestore.
+*   **Verification:**
+    *   [ ] Check the Stripe Dashboard -> Payments -> [Click Payment] -> Metadata section. It should contain the correct `institution_id`.
+
+---
+
+## 🚩 Common Failure Points to Watch For:
+1.  **Missing `require_admin_v2`:** If you forget this, a student might accidentally access the checkout session API.
+2.  **Wrong `success_url`:** Ensure the `success_url` in your Python code includes the `{CHECKOUT_SESSION_ID}` template tag.
+3.  **Firestore Permissions:** Ensure your Firestore rules allow the Admin to update their own Institution record after payment (or perform the update server-side).
