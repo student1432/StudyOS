@@ -95,7 +95,7 @@
                     {% if sessions %}
                     {% for session in sessions %}
                     <div class="session-row">
-                        <span>{{ session.get('duration', 0) }} min</span>
+                        <span>{{ (session.get('duration_seconds', 0) // 60) }} min</span>
                         <span class="text-muted">{{ session.get('start_time', '') }}</span>
                     </div>
                     {% endfor %}
